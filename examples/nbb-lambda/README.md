@@ -1,11 +1,10 @@
 # nbb Lambda example
 
-A Lambda-shaped nbb handler that branches a sort on fieldtest decisions and reports its duration.
+An nbb handler shaped like a Lambda. It sorts a list, branching on fieldtest decisions, and reports how long the sort took.
 
-- `event-handoff.json` carries decisions made elsewhere (for example by the server that enqueued the job), serialized with `client/decisions->json`. The handler branches on them without asking again.
-- `event-ask.json` has no decisions, so the handler asks the HTTP decider, with a 300 ms timeout.
+There are two sample events. `event-handoff.json` already contains decisions, made elsewhere (say, by the service that queued the job) and serialized with `client/decisions->json`, so the handler branches on them without contacting the server. `event-ask.json` has none, so the handler asks the HTTP decider and waits at most 300 ms.
 
-Both report through the [ring-server](../ring-server) example, so start it first:
+Both send feedback to the [ring-server](../ring-server) example, so start that first:
 
 ```sh
 (cd ../ring-server && clojure -M -m example.server)   # :8723
@@ -14,4 +13,4 @@ npx nbb -m example.handler event-handoff.json
 npx nbb -m example.handler event-ask.json
 ```
 
-Each run prints the handler's response and adds feedback (and, for `event-ask.json`, an exposure) to `../ring-server/records.jsonl`. With the server down, the handler still sorts: it runs `:a` untracked.
+Each run prints the handler's response and appends feedback to `../ring-server/records.jsonl`; `event-ask.json` adds an exposure as well. If the server is down, the sort still runs, on `:a`, and nothing is reported.

@@ -1,10 +1,10 @@
 # Analysis
 
-fieldtest records; it doesn't analyse. This page describes the analysis the records are designed for. Everything below is per experiment and per revision. Never compare across revisions.
+fieldtest doesn't include any analysis. This page covers what to do with the records, always looking at one experiment at one revision.
 
-## Join exposures to feedback
+## Joining exposures and feedback
 
-Every exposure has an id, and feedback lists the exposure ids it measured. Join on that id to label each piece of feedback with the arm the server assigned:
+Each exposure has an id, and each piece of feedback lists the exposure ids it measured. Joining on that id tells you which arm the server assigned to each measurement:
 
 ```sql
 select e.arm, f.metric, f.value, f.outcome
@@ -14,31 +14,30 @@ join feedback f on f.id = fe.feedback_id
 where e.experiment = 'asset-host' and e.revision = 3;
 ```
 
-## Per-arm summary
+The Postgres example has the schema behind this query and a fuller per-arm version of it.
 
-For each arm and metric, report:
+## What to report per arm
 
-- **count**: exposures, and feedback rows.
-- **latency**: p50, p75 and p95 of `value` where `outcome = 'ok'`. Means hide tails, and tails are usually what a new implementation changes.
-- **failure rate**: the share of feedback whose outcome is `error`, `timeout` or `abandoned`.
-- **fallback rate**: the share with outcome `fallback`, if callers fall back by hand.
+For each arm and metric, look at how many exposures and how many feedback rows there are, the p50, p75 and p95 of `value` for `ok` outcomes, and the share of feedback that came back as `error`, `timeout` or `abandoned`. If your code falls back by hand, look at the `fallback` share too.
 
-## Analyse by assigned arm
+Prefer percentiles to means. Changes often show up in the tail, and a mean hides them.
 
-Group by the arm in the exposure, the one the server assigned, not by what the client says it ran. A client that couldn't run `:b` ran `:a` and reported `unsupported-arm`. Those units still count as `:b`. Dropping them would bias `:b` toward the clients that can run it. Report `unsupported-arm` separately: a lot of it means clients are out of date.
+## Group by the assigned arm
 
-## Check sample-ratio mismatch
+Group by the arm on the exposure. That is the arm the server assigned, and it can differ from what the client actually ran. Suppose a client couldn't run `:b`. It ran `:a` instead and reported `unsupported-arm`, but that unit still belongs to `:b`. If you drop those units, `:b` looks better than it is because only the clients that could run it are left. Count `unsupported-arm` separately. If there's a lot of it, some clients are probably out of date.
 
-With `:b` at 20%, about 20% of exposures should be `:b`. Test the observed split against the configured weights (a chi-squared test is fine). A mismatch means something upstream is broken, for example caching, a filter, or clients that crash before asking. Results from a mismatched experiment can't be trusted, however good they look.
+## Sample-ratio mismatch
 
-## Check missing feedback
+With `:b` at 20%, roughly 20% of exposures should be `:b`. Check the actual split against the configured weights; a chi-squared test is enough. A mismatch means something upstream is wrong, for example a cache serving stale decisions or clients crashing before they ask, and the experiment's results can't be trusted.
 
-Count exposures with no feedback, per arm. Some are expected (the user left, the process was frozen). If one arm has noticeably more, that arm may be failing so badly it never reports, and its failure rate is understated.
+## Missing feedback
 
-## Split by release
+Count exposures that never got feedback, per arm. Some of that is normal, because users leave and processes get frozen. But if one arm has noticeably more, it may be failing so badly that it never reports, and its error rate is lower than reality.
 
-Exposures carry the client's context map. If clients send a release or build id there, split results by it. A change in either arm between releases shows up as a step, and you can drop the release that mixed two versions of an arm.
+## Releases
 
-## A/A first
+Exposures carry the client's context map. If clients put a release or build id in it, you can split the results by release. When either arm changes between releases you'll see a step, and you can drop the release where an arm was half one version and half another.
 
-Before trusting an experiment, run it with identical code in `:a` and `:b`. The arms should show no sample-ratio mismatch, matching latency distributions and matching failure rates. Any difference is measurement error, and it is also the smallest effect you can hope to detect. This library's own test suite runs an A/A over 20,000 simulated keys for the same reason.
+## Run an A/A first
+
+Before trusting any experiment, run it with the same code in `:a` and `:b`. You should see no sample-ratio mismatch and matching latency and failure rates. Any difference you see is noise, and it gives you a rough idea of how small an effect you'll be able to detect. fieldtest's own test suite runs an A/A over 20,000 simulated keys for this reason.

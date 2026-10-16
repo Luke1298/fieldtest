@@ -1,19 +1,22 @@
 # fieldtest
 
-Run experiments on real traffic from Clojure, ClojureScript and nbb: a server decides which arm each client runs, and clients report how it went.
+fieldtest is a library for A/B testing code paths in production. It runs on the JVM, in the browser through shadow-cljs, and in nbb.
 
-You have an operation with a hardened implementation (`:a`) and one or more candidates (`:b`, `:c`, …). Ship the candidates behind a branch at 0%, ramp them up from config, and compare timings and failure rates per arm. Each call runs exactly one arm, so candidates may have side effects. Nothing runs twice and nothing is retried.
+It's meant for rewrites of code that already runs in production, like the way a page fetches its assets or the way uploads are split into chunks. You send some real traffic to the new version and check whether it's faster or fails less before switching everyone over.
 
-fieldtest has no opinion about infrastructure. Where weights come from, how arms are chosen and where records go are all plug-ins: plain functions that return a value or a promise.
+The old code stays as arm `:a` and the new code becomes `:b`. A server, which can just be a value in your own process, tells each client which arm to run. The client runs that arm once and reports how long it took and whether it worked. You move traffic toward `:b` by editing config.
 
-## 60 seconds, in one process
+Only one arm runs for any given call, so the new code is allowed to write to a database or call an API. A failed `:b` isn't retried on `:a`; if you want a fallback, write it into your arm and report it as one.
+
+You decide where the config lives, how arms are picked and where the records end up. Each of those is a function you pass in. In-memory versions are included for tests and local work.
+
+## Trying it in a REPL
 
 ```clojure
 (require '[fieldtest.client :as client]
          '[fieldtest.memory :as memory]
          '[fieldtest.server :as server])
 
-;; A server is a value built from plug-ins. These are the in-memory ones.
 (def store (atom []))
 (def srv
   (server/server
@@ -21,10 +24,10 @@ fieldtest has no opinion about infrastructure. Where weights come from, how arms
                     {"greeting" {:revision 1 :weights {:b 50} :sticky :hashed}})
     :recorder (memory/recorder store)}))
 
-;; The client describes the experiment with the arms it can run.
+;; The client lists the arms it knows how to run.
 (def greeting {:experiment "greeting" :revision 1 :arms [:a :b]})
 
-;; Ask once per scope (a request, a page, a job) and reuse the decisions.
+;; Ask once per request (or page, or job) and reuse the answer.
 (def decisions
   @(client/decide (client/in-process-decider srv) [greeting]
                   {:sticky-key "user:42"}))
@@ -32,7 +35,6 @@ fieldtest has no opinion about infrastructure. Where weights come from, how arms
 (def c {:decisions decisions
         :reporter (client/in-process-reporter srv)})
 
-;; Run the decided arm, timing it against the decision's exposure id.
 (def result
   (client/timed c {:exposure-id (:exposure-id (client/decision c greeting))
                    :metric "greeting.render"}
@@ -42,17 +44,19 @@ fieldtest has no opinion about infrastructure. Where weights come from, how arms
                                          "Ada"))))
 
 result
-;; => "Hello, Ada" or "Hi, Ada", the same every time for "user:42"
+;; => "Hello, Ada" or "Hi, Ada"
 
-(memory/exposures @store) ;; one exposure: which arm "user:42" got
-(memory/feedback @store)  ;; one timing, joined to it by exposure id
+(memory/exposures @store)
+(memory/feedback @store)
 ```
 
-On ClojureScript and nbb the same code works with promises instead of `@`.
+Whichever greeting `user:42` gets, they keep getting it. The store ends up with one exposure, saying which arm `user:42` was given, and one timing that points back to it by exposure id.
 
-## Install
+In ClojureScript and nbb, use the promises directly instead of `@`.
 
-fieldtest isn't on Clojars yet. Depend on it locally or from git:
+## Installing
+
+fieldtest isn't on Clojars yet, so depend on a local checkout or on git:
 
 ```clojure
 ;; deps.edn
@@ -61,52 +65,55 @@ fieldtest isn't on Clojars yet. Depend on it locally or from git:
 {:deps {io.github.Luke1298/fieldtest {:git/url "https://github.com/Luke1298/fieldtest" :git/sha "…"}}}
 ```
 
-nbb projects use the same coordinates in `nbb.edn`. shadow-cljs builds pick it up through `deps.edn` or `:source-paths`.
+nbb takes the same coordinates in `nbb.edn`, and shadow-cljs picks it up from `deps.edn`.
 
-Runtime dependencies are promesa and, on the JVM only, cheshire. cheshire is never loaded by ClojureScript or nbb (see [decision 5](doc/decisions/0005-jvm-json.md)).
+On the JVM it depends on promesa and cheshire. ClojureScript and nbb only need promesa, and cheshire is never loaded there. [Decision 5](doc/decisions/0005-jvm-json.md) explains how that is enforced.
 
-## Concepts at a glance
+## How it fits together
 
-- **experiment**: a named choice between implementations of one operation, with a **revision**. A new revision reshuffles everyone, and results never cross revisions.
-- **arm**: one implementation. `:a` is the baseline and gets every unit not drawn into a candidate.
-- **server**: decides arms and receives feedback, through three plug-ins: a **config source**, a **selector** and a **recorder**. Run it in-process, behind HTTP, or both.
-- **client**: runs exactly the decided arm with `branch`, and reports **feedback** (timings, outcomes) with `timed` and `report!`.
-- **sticky key**: an opaque string the client sends to keep getting the same arm. The client decides what it identifies.
-- **exposure**: the server's record of a decision. Its random id is the only link between a decision and later feedback.
+An experiment has a name and a revision. Bumping the revision reshuffles who gets which arm, so don't compare numbers across revisions.
 
-When anything fails, the operation still runs. A missing decision runs `:a` untracked, a failing plug-in gives `:a`, and a failing recorder or reporter loses the record but never changes the result. See [concepts](doc/concepts.md).
+The server takes three plug-ins: a config source that returns the weights, a selector that picks an arm, and a recorder that stores exposures and feedback. The default selector hashes the sticky key, so a given key keeps getting the same arm.
+
+The sticky key can be any string. Use whatever you want assignments to stay consistent for, such as a user id or a job id.
+
+Each decision is recorded as an exposure with a random id, and the client includes that id when it reports a timing. To see timings per arm, join feedback to exposures on the id.
+
+Your code keeps working when fieldtest has problems. Without a decision the client runs `:a` and reports nothing, a failing config source or selector also leads to `:a`, and a failing recorder or reporter just loses that record. [Concepts](doc/concepts.md) has the full table.
 
 ## Over HTTP
 
-`fieldtest.http` provides framework-free handlers (`{:body …}` in, `{:status :headers :body}` out) and an HTTP decider and reporter that use `js/fetch` or `java.net.http`:
+`fieldtest.http` has a decide handler and a feedback handler that take `{:body …}` and return `{:status :headers :body}`, so you can mount them in whatever server you already run. On the client side there's an HTTP decider and reporter, built on `js/fetch` in ClojureScript and `java.net.http` on the JVM.
 
 ```clojure
-(def decide-handler (http/decide-handler srv))     ; mount at POST /decide
-(def feedback-handler (http/feedback-handler srv)) ; mount at POST /feedback
+(def decide-handler (http/decide-handler srv))     ; POST /decide
+(def feedback-handler (http/feedback-handler srv)) ; POST /feedback
 
-;; in the browser, nbb or another JVM
+;; in the browser, in nbb, or on another JVM
 (client/decide (http/decider "https://example.test/decide") [greeting]
                {:sticky-key "user:42" :timeout-ms 300})
 ```
 
-Decisions also serialize with `client/decisions->json`, so a server-rendered page or a Lambda payload can hand them to another runtime that branches without asking again.
+Decisions can also be passed along with `client/decisions->json`. A server-rendered page can embed them, or a Lambda can receive them in its event, and branch on them without asking the server again.
 
-## How it compares
+## Other libraries
 
-- **Touchstone** is a Clojure split-testing library for web apps that stores its tests in Redis and chooses arms with a bandit. fieldtest leaves storage and selection to plug-ins, runs on the JVM, in the browser and in nbb, and is aimed at measuring operations (latency, failure rate) rather than conversions.
-- **Scientist-style libraries** run both the old and new code and compare their results, so the code must be free of side effects. fieldtest runs exactly one arm per call, which makes it safe for operations with side effects, and compares arms statistically across calls instead of call by call.
-- **OpenFeature** is a vendor-neutral API for evaluating feature flags. fieldtest can sit on top of a flag system: a selector can defer to an OpenFeature client (see `examples/openfeature-selector`). fieldtest adds the exposure records, feedback and the single-arm, never-retry branch that experiments need.
+Touchstone is aimed at conversion testing in web apps, keeps its state in Redis, and picks arms with a bandit. fieldtest is aimed at latency and error rates and has no storage of its own.
 
-## Plug-ins and the test kit
+GitHub's Scientist and its ports run the old and new code side by side and compare outputs, which is fine for pure code but not for uploads or database writes. fieldtest runs one arm per call and compares the arms across many calls.
 
-Write your own config source, selector or recorder as a function, then check it against the server's contracts with the test kit (its own library in `test-kit/`; add it to your test deps):
+OpenFeature evaluates feature flags but doesn't record exposures or collect timings. The two can be combined: `examples/openfeature-selector` is a selector that asks an OpenFeature client which variant to use.
+
+## Writing your own plug-ins
+
+To check that a plug-in behaves the way the server expects, run it through the test kit. It lives in `test-kit/` and can be added to your test dependencies:
 
 ```clojure
 (let [{:keys [pass? failures]} @(test-kit/check-recorder my-recorder)]
   (is pass? (pr-str failures)))
 ```
 
-See [writing plug-ins](doc/writing-plugins.md).
+[Writing plug-ins](doc/writing-plugins.md) covers what each check looks for.
 
 ## Docs
 
@@ -115,11 +122,11 @@ See [writing plug-ins](doc/writing-plugins.md).
 - [Writing plug-ins](doc/writing-plugins.md)
 - [Analysis](doc/analysis.md)
 - [Decisions](doc/decisions/)
-- [Selector test vectors](doc/selector-vectors.json) for implementations in other languages
+- [Selector test vectors](doc/selector-vectors.json), for anyone writing a compatible selector in another language
 
 ## Development
 
-`bb ci` lints and runs the JVM, shadow-cljs (node) and nbb suites. `bb tasks` lists the rest.
+`bb ci` runs the linters and the test suites on the JVM, under shadow-cljs and in nbb. `bb tasks` lists everything else.
 
 ## License
 

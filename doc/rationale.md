@@ -1,41 +1,45 @@
 # Rationale
 
-fieldtest exists to answer one question safely: is the new implementation of this operation better than the old one, measured on real traffic? Each choice below follows from that.
+## The server picks the arm
 
-## The server decides, the client executes
+Weights live on the server so that changing them doesn't require a deploy. Keeping the assignment logic in one place also means a JVM service, a browser page and an nbb Lambda all split traffic the same way, instead of each having its own implementation that can get out of sync. Clients only need to know which arms they can run. They ask at the start of a request or job and use the answer for the rest of it.
 
-Weights, stickiness and arm choice live on a server so they can change without a deploy and so every runtime (JVM, browser, nbb) splits traffic the same way. The client only knows which arms it can run. It asks once per scope, then runs whatever it was told.
+"Server" is a slightly misleading name. It's a map you build with `fieldtest.server/server` and pass to `decide`. If you want it on the network you mount the HTTP handlers in front of it; if you don't, you call it in-process. Both go through the same code.
 
-The server is a value, not a process. A host can call it in-process, put it behind HTTP, or both, and the decision is identical either way.
+## Each call runs one arm
 
-## One arm, no retry
+The operations this was written for have side effects, things like uploads and database writes. If fieldtest ran both versions so it could compare their results, every upload would happen twice. Retrying a failed `:b` on `:a` has the same problem. So `branch` calls exactly one arm, and if that arm throws, you get the exception back as it was thrown.
 
-An operation may have side effects: an upload, a write, a charge. Running two arms to compare them, or retrying a failed candidate on the baseline, could do the side effect twice. So `branch` runs exactly one arm, and an error from that arm reaches the caller unchanged. Whether to fall back is the caller's decision, and when they do, they can report it as `fallback` feedback.
+You can still fall back by hand: catch the error inside your `:b` arm, call the old code, and report the outcome as `fallback` so the analysis counts it.
 
-This is the main difference from Scientist-style libraries, which run both versions and so need code without side effects.
+GitHub's Scientist and the libraries based on it run both versions on every call. That works for pure code, but not for the kind of operations fieldtest is meant for.
 
-## Feedback carries no arm
+## Feedback points at exposures
 
-Feedback names exposure ids, never the arm, revision or sticky key. The arm is known only from the server's exposure record, and analysis joins on the id. That keeps clients from mislabelling results, keeps the arm in one place, and means a client that ran the wrong arm can't hide it. An exposure without feedback is a signal too (see [analysis](analysis.md)).
+When the server makes a decision it writes an exposure record holding the arm, the revision, the sticky key and the client's context, under a random id. The client gets the id back with the decision. When it later reports a timing, the feedback carries that id along with the measurement, and to see timings per arm you join feedback to exposures on it.
 
-Exposure ids are random, so they reveal nothing about the arm, key or experiment.
+This way only the server records the arm. If clients reported it themselves, a client bug could file a `:b` timing under `:a` and the numbers would look fine. It also makes exposures that never receive feedback easy to find, and those are often the first sign that an arm is failing (see [analysis](analysis.md)).
 
-## The sticky key is opaque
+Exposure ids are 128 random bits and don't encode the sticky key or the arm, so they're safe to log.
 
-The client chooses what the sticky key identifies: a user, a device, a session, an upload. The server only hashes it. There is no built-in notion of a user, because what makes a fair unit differs per experiment and the library shouldn't guess.
+## Sticky keys
+
+The client decides what to send. For a page-load experiment a user id is a reasonable choice; for an upload experiment the upload id might be better. The server hashes the string and doesn't use it for anything else. fieldtest has no built-in idea of a user, because the right unit depends on the experiment and picking the wrong one biases the results without any error showing up.
 
 ## Plug-ins are functions
 
-A config source, selector and recorder are plain functions that return a value or a promise. There are no protocols to implement, no records to construct and no lifecycle. That makes them trivial to write, wrap (as `fieldtest.config/cached` does) and stub in tests, and it works the same in Clojure, ClojureScript and nbb. The [test kit](writing-plugins.md) checks behaviour, which a protocol couldn't do anyway.
+The config source, selector and recorder are plain functions that return a value or a promise. You can write one inline in a test, or wrap one in another function; `fieldtest.config/cached` is just a function that takes a config source and returns a caching one. They also work in nbb, which supports protocols less completely than ClojureScript does.
 
-## Failures never hurt the operation
+The cost is that a function signature says nothing about how the function should behave. The test kit is there to cover that: it calls your plug-in with a range of inputs and checks the results against what the server relies on.
 
-Tracking is optional and the operation is not. A failing config source keeps the last good configs, a failing selector gives `:a`, a failing recorder or reporter loses a record, and a decider that fails or is slow gives no decisions, so the client runs `:a` untracked. None of these change what the operation returns.
+## When tracking fails
 
-## No infrastructure
+If the config source throws, the server keeps using the last configs it read, and if the selector throws, that experiment gets `:a`. A recorder that throws loses the record but the response still goes out. On the client, a decider that errors or runs past its timeout leaves `branch` without a decision, so it runs `:a` and reports nothing. The table in [concepts](concepts.md) lists every case.
 
-The library reads no environment, stores nothing durable and calls no cloud service. Those are a host's decisions, made in plug-ins. `bb lint:no-infra` keeps it that way.
+## Infrastructure
 
-## Accrete-only compatibility
+fieldtest does no I/O of its own beyond the optional HTTP transport. Reading environment variables, files, AWS or a database is up to the host's plug-ins, and `bb lint:no-infra` fails if code like that shows up under `src/`.
 
-The wire format carries a version, and new versions only add fields. Readers ignore fields they don't know. Public functions gain options rather than changing meaning. Plug-ins take a single map so new keys don't break them.
+## Compatibility
+
+Every wire document has a `v` field. Later versions may add fields but won't remove or rename them, and readers ignore fields they don't recognise. The Clojure API follows the same rule: functions can gain options, but what they already do won't change. That's also why selectors receive a single map; adding a key later won't break the selectors people have already written.

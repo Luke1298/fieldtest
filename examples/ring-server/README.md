@@ -1,6 +1,6 @@
 # Ring server example
 
-fieldtest's decide and feedback handlers mounted in http-kit, with an EDN-file config source (`experiments.edn`, cached for 2 seconds) and a recorder that appends JSON lines to `records.jsonl`.
+fieldtest's two handlers mounted in http-kit. Configs come from `experiments.edn`, cached for two seconds, and records are appended to `records.jsonl` as JSON lines.
 
 ```sh
 clojure -M -m example.server        # listens on :8723
@@ -13,13 +13,13 @@ curl -s localhost:8723/decide -d '{"v":1,"sticky-key":"user:42","experiments":[{
 # {"decisions":[{"experiment":"asset-host","revision":1,"arm":"b","exposure-id":"…"}],"v":1}
 ```
 
-Report feedback against the exposure id it returned:
+Then send feedback for the exposure id you got back:
 
 ```sh
 curl -s localhost:8723/feedback -d '{"v":1,"feedback":[{"exposure-ids":["…"],"metric":"asset.load","value":120,"value-unit":"ms","outcome":"ok"}]}'
 # {"accepted":1,"v":1}
 ```
 
-`records.jsonl` now has one exposure line and one feedback line. Edit `experiments.edn` while the server runs to change weights.
+`records.jsonl` should now have an exposure line and a feedback line. Edit `experiments.edn` while the server is running to change the weights.
 
-The server allows any origin so the [browser-client](../browser-client) example can call it from another port. A real host would restrict origins and add authentication; the handlers leave both to the host.
+CORS is open to any origin so the [browser-client](../browser-client) example can call this server from another port. A real deployment should restrict origins and add authentication.

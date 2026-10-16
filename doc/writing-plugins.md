@@ -1,15 +1,15 @@
 # Writing plug-ins
 
-A server is built from three plug-ins and an optional error hook:
+A server takes three plug-ins and, optionally, an error hook:
 
 ```clojure
 (server/server {:config-source my-config-source
-                :selector      my-selector        ; optional, defaults to weighted-hash
+                :selector      my-selector        ; defaults to the weighted-hash selector
                 :recorder      my-recorder
                 :error-hook    (fn [{:keys [plugin error experiment]}] ...)})
 ```
 
-Each plug-in is a plain function. It may return a value or a promise (promesa, a JS promise, or a `CompletableFuture`).
+Each one is an ordinary function. It can return a plain value or a promise, and any of promesa promises, JS promises and `CompletableFuture`s will do.
 
 ## Config source
 
@@ -17,15 +17,11 @@ Each plug-in is a plain function. It may return a value or a promise (promesa, a
 (fn [] {"asset-host" {:revision 3 :weights {:b 20} :sticky :hashed}})
 ```
 
-Returns the current configs as a map of experiment name to config. JSON-shaped data with string keys and string arms is fine.
+Returns the current configs, keyed by experiment name. String keys and string arm names, as you'd get from parsing JSON, are fine.
 
-Contract:
+The server calls it on every decide request. It should answer reasonably quickly with a map of valid experiments, or throw (or reject) when it can't. When it fails, the server keeps using the last configs it read successfully and passes the error to the error hook. If a single experiment in the map is invalid, that one is dropped and reported, and the rest still work.
 
-- It settles in reasonable time.
-- It returns a map of valid experiment configs, or it fails by throwing or rejecting. The server then keeps the last good configs and reports the failure to the error hook.
-- Experiments that are invalid are dropped and reported. Others still work.
-
-The server calls the config source on every decide request. Wrap a slow or remote source with `fieldtest.config/cached`, which calls it at most once per TTL and backs off after a failure.
+If reading configs is slow or goes over the network, wrap the source in `fieldtest.config/cached`. That calls it at most once per TTL and waits a little before retrying after a failure.
 
 ## Selector
 
@@ -33,15 +29,11 @@ The server calls the config source on every decide request. Wrap a slow or remot
 (fn [{:keys [experiment config sticky-key supported-arms context]}] :b)
 ```
 
-Chooses an arm for one experiment. `config` is the normalized config, with `:sticky :none` when the request has no sticky key. `context` is the decide request's context map, passed through unchanged.
+Picks an arm for one experiment. `config` has already been normalized, and if the request had no sticky key, its `:sticky` is set to `:none`. `context` is whatever map the client put in its decide request.
 
-Contract:
+A selector shouldn't throw or hang on valid input. It should return `:a` or a candidate that is both in the config and in `supported-arms`; the server replaces anything else with `:a` and reports it. In `hashed` mode, the same sticky key, experiment, revision and weights should always give the same arm.
 
-- It never throws or hangs on valid input.
-- It returns `:a` or a candidate that is both configured and in `supported-arms`. Anything else is replaced with `:a` and reported.
-- In `hashed` mode it returns the same arm every time for the same sticky key, experiment, revision and weights.
-
-If the default selector doesn't fit (say, weights come from a flag service), write one that defers to it. See `examples/openfeature-selector`.
+If the weights really live in a flag service, write a selector that asks it. `examples/openfeature-selector` does this for OpenFeature.
 
 ## Recorder
 
@@ -49,19 +41,15 @@ If the default selector doesn't fit (say, weights come from a flag service), wri
 (fn [kind record] ...)   ; kind is :exposure or :feedback
 ```
 
-Receives every exposure and every feedback record. See `fieldtest.records` for their shapes. Join them on the exposure id.
+Gets every exposure and every piece of feedback. The record shapes are documented in `fieldtest.records`, and the two are joined on exposure id.
 
-Contract:
+It has to accept every record shape and cope with being called concurrently. If it throws, the server reports the error and carries on, but that record is gone, so it's worth making the recorder dependable.
 
-- It accepts every record shape without throwing, rejecting or hanging.
-- It tolerates concurrent calls.
-- Failures are reported to the error hook and never change a response, but a lost record is lost, so make it reliable.
+`decide` waits for the recorder before it responds. That way a serverless host can't freeze the process before the exposure is written, but it also means a slow recorder makes decisions slow. Keep writes quick, or buffer inside the recorder.
 
-`decide` waits for the recorder before it responds, so a serverless host doesn't freeze before an exposure is written. Keep recording fast, or buffer inside the recorder.
+## The test kit
 
-## Running the test kit
-
-Add the test kit to your test classpath. It is its own library in `test-kit/`, so depend on it from a test alias (`io.github.Luke1298/fieldtest-test-kit {:local/root "…/fieldtest/test-kit"}`, or the same with `:git/url` and `:deps/root "test-kit"`). Then call a check from any test runner. Each check returns a promise of `{:pass? :failures}`, where each failure has a `:reason` keyword and a `:message`.
+The test kit is a separate library in `test-kit/`. Add it to a test alias, either as `io.github.Luke1298/fieldtest-test-kit {:local/root "…/fieldtest/test-kit"}` or with `:git/url` and `:deps/root "test-kit"`, and call its checks from whatever test runner you use. Each check returns a promise of `{:pass? :failures}`, and every failure has a `:reason` keyword and a `:message`.
 
 ```clojure
 (ns my.recorder-test
@@ -76,7 +64,7 @@ Add the test kit to your test classpath. It is its own library in `test-kit/`, s
     (is pass? (pr-str failures))))
 ```
 
-On ClojureScript or nbb, wait for the promise with your runner's async support (this repo uses a `defasynctest` macro) instead of `@`.
+In ClojureScript or nbb you can't deref, so wait on the promise with your runner's async support. This repo's tests use a `defasynctest` macro for that.
 
 | Check | Options | Failure reasons |
 |---|---|---|
