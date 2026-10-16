@@ -1,11 +1,11 @@
 (ns example.openfeature-selector
-  "A fieldtest selector that defers to an OpenFeature client. The flag key is
-  the experiment name, the targeting key is the sticky key, and the flag's
-  string variant value names the arm.
+  "A fieldtest selector that asks an OpenFeature client for the arm. The flag
+  key is the experiment name, the targeting key is the sticky key, and the
+  flag's string variant is used as the arm name.
 
-  fieldtest still owns the experiment: the server only asks this selector
-  about experiments in its config, and an arm the flag returns is used only if
-  it is a configured candidate the client supports. Anything else is :default."
+  The server only calls this selector for experiments in its own config. If
+  the flag returns an arm that isn't a configured candidate the client
+  supports, the selector returns :default."
   (:import
    (dev.openfeature.sdk Client MutableContext)))
 

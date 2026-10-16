@@ -1,6 +1,6 @@
 (ns fieldtest.ids
-  "Random exposure ids. An id reveals nothing about the arm, sticky key or
-  experiment it belongs to.")
+  "Random exposure ids. They don't encode the arm, sticky key or experiment,
+  so they can be logged freely.")
 
 #?(:clj (def ^:private ^java.security.SecureRandom rng (java.security.SecureRandom.)))
 

@@ -1,9 +1,9 @@
 (ns fieldtest.server
-  "The experiment server: decides arms for clients and receives their feedback.
+  "Deciding arms for clients and accepting their feedback.
 
-  A server is a value built from plug-ins, not a process. Host it in-process,
-  behind HTTP (see `fieldtest.http`), or both. Each plug-in is a plain function
-  that may return a value or a promise:
+  A server is a map built from plug-ins. You can call it in-process, put the
+  handlers in `fieldtest.http` in front of it, or both. Each plug-in is a
+  plain function that may return a value or a promise:
 
   - `:config-source` `(fn [] configs)` returns the current experiment configs
     (see `fieldtest.config`).
@@ -15,9 +15,10 @@
   - `:error-hook` `(fn [{:keys [plugin error experiment]}])` receives every
     plug-in failure. Optional.
 
-  A failing plug-in never makes a decide request fail: a bad config source
-  leaves the last good configs in place, a failing selector gives `:default`, and a
-  failing recorder is ignored. Every failure goes to the error hook."
+  Plug-in errors don't make a decide request fail. If the config source fails,
+  the last good configs stay in use. If the selector fails, the experiment
+  gets `:default`. If the recorder fails, the record is dropped. In each case
+  the error is passed to the error hook."
   (:require
    [clojure.string :as str]
    [fieldtest.config :as config]
@@ -184,8 +185,8 @@
   optional. Every decision, including `:default`, is recorded as an exposure before
   the promise resolves.
 
-  Rejects with an ex-info of type `:fieldtest.server/invalid-request` when the
-  request itself is malformed. Plug-in failures never reject."
+  Rejects with an ex-info of type `:fieldtest.server/invalid-request` if the
+  request is malformed. Plug-in errors don't cause a rejection."
   [server request]
   (if-let [problem (request-problem request)]
     (p/rejected (ex-info (str "Invalid decide request: " problem)
@@ -201,9 +202,10 @@
   "Validates a batch of feedback and passes each record to the recorder.
   Returns a promise of `{:accepted n}`.
 
-  Rejects with an ex-info of type `:fieldtest.server/invalid-request`, and
-  records nothing, when the batch is not a list or any record is invalid.
-  Recorder failures go to the error hook and never reject."
+  Rejects with an ex-info of type `:fieldtest.server/invalid-request`, without
+  recording anything, if the batch isn't a list or any record in it is
+  invalid. If the recorder fails, the error goes to the error hook and the
+  promise still resolves."
   [server batch]
   (let [problem (if (sequential? batch)
                   (some (fn [[i m]]

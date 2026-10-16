@@ -1,6 +1,6 @@
 (ns fieldtest.memory
-  "In-memory plug-ins for tests and local development. Nothing here is
-  durable.")
+  "In-memory plug-ins for tests and local development. Records are kept in an
+  atom and are lost when the process exits.")
 
 (defn config-source
   "A config source that returns `configs`, or the current value of `configs`

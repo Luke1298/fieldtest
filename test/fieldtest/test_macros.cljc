@@ -2,9 +2,10 @@
   "Async tests that work the same on the JVM, in shadow-cljs and in nbb.
 
   `defasynctest` defines a test whose body returns a promise (or a value).
-  The test finishes only when the promise settles, and a rejection is
-  reported as an error of that test, so assertions never land on whichever
-  test happens to be running later."
+  The test doesn't finish until the promise settles, and a rejection is
+  reported as an error in that test. Without this, assertions that run after
+  a test has finished get attributed to whichever test is running at the
+  time."
   #?(:cljs (:require-macros [fieldtest.test-macros]))
   (:require
    #?(:clj [clojure.test])
@@ -41,7 +42,7 @@
   [test-name & body]
   (let [cljs? #?(:clj (boolean (:ns &env)) :cljs true)
         {:keys [line column]} (meta &form)
-        ;; shadow-cljs has no *file* at macro time; the namespace will do.
+        ;; shadow-cljs has no *file* at macro time, so report the namespace instead.
         file (or (some-> &env :ns :name str)
                  ;; nbb binds *file* in ClojureScript too.
                  #_{:clj-kondo/ignore [:unresolved-symbol]} *file*)]

@@ -27,7 +27,7 @@
   (p/let [resp (handler {:body (if (string? doc) doc (json/encode doc))})]
     (assoc resp :doc (json/decode (:body resp)))))
 
-;; 6.2 / 6.3
+;; Handlers and wire format
 
 (defasynctest decide-handler-decides
   (let [{:keys [server store]} (setup)]
@@ -98,7 +98,7 @@
     (p/let [{:keys [status]} ((http/decide-handler server) {:body bytes})]
       (is (= 200 status)))))
 
-;; 6.4 with a stubbed transport
+;; HTTP decider and reporter, with a stubbed transport
 
 (defn- loopback
   "A `:post` function that serves requests with the handlers directly."

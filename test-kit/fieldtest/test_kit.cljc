@@ -1,14 +1,14 @@
 (ns fieldtest.test-kit
-  "Contract checks for plug-ins. Run them from any test runner to confirm a
-  config source, selector or recorder behaves the way the server expects.
+  "Checks that a config source, selector or recorder behaves the way the
+  server expects.
 
   Each check takes a plug-in and returns a promise of
 
       {:pass? true|false
        :failures [{:reason :keyword :message \"...\"} ...]}
 
-  rather than calling `is`, so it fits clojure.test, cljs.test, nbb or
-  anything else:
+  The checks don't call `is` themselves, so you can use them from
+  clojure.test, cljs.test, nbb or any other runner:
 
       (deftest my-recorder-meets-the-contract
         (let [{:keys [pass? failures]} @(test-kit/check-recorder my-recorder)]
@@ -50,10 +50,11 @@
 ;; Config sources
 
 (defn check-config-source
-  "Checks a config source: every call settles within `:timeout-ms` (default
-  5,000) and either resolves to a map of valid experiment configs or fails by
-  throwing or rejecting, which the server can isolate. Calls it `:calls`
-  times (default 3).
+  "Calls a config source `:calls` times (default 3) and checks each result.
+  Every call has to finish within `:timeout-ms` (default 5,000). Returning a
+  map of valid experiment configs passes, and so does throwing or rejecting,
+  since the server handles that by keeping its last good configs. Returning
+  anything else fails.
 
   Reasons: `:hangs`, `:not-a-map`, `:invalid-experiment`."
   ([source] (check-config-source source {}))
@@ -127,10 +128,14 @@
       :else [])))
 
 (defn check-selector
-  "Checks a selector over a matrix of valid requests: it never throws or
-  hangs, it only chooses `:default` or a configured candidate, it respects the
-  client's supported arms, and in `hashed` mode it chooses the same arm every
-  time for the same sticky key.
+  "Calls a selector with a range of valid requests (different weights, sticky
+  keys and supported arms) and checks what it returns.
+
+  The selector fails the check if it throws or doesn't answer within
+  `:timeout-ms`. It also fails if it picks an arm other than `:default` that
+  isn't in the config, or that the client didn't list as supported. Each
+  request is sent `:repeats` times (default 5), and for `hashed` requests
+  with a sticky key the selector has to give the same answer every time.
 
   Reasons: `:throws`, `:hangs`, `:unconfigured-arm`, `:unsupported-arm`,
   `:unstable`."
@@ -147,7 +152,7 @@
                             (and hashed? (empty? own) (< 1 (count arms)))
                             (conj (failure :unstable (str "hashed mode chose " (pr-str arms) " for one sticky key")
                                            :request request)))))))]
-     ;; One failure per reason is enough to act on.
+     ;; Keep one failure per reason so the report stays short.
      (result (vals (into {} (map (juxt :reason identity)) (apply concat checked)))))))
 
 ;; Recorders
@@ -181,18 +186,20 @@
      :cljs (p/all (map (fn [thunk] (thunk)) thunks))))
 
 (defn check-recorder
-  "Checks a recorder: it accepts every exposure and feedback record shape
-  without throwing, rejecting or hanging, and tolerates `:concurrency`
-  (default 50) calls at once.
+  "Sends a recorder one of each kind of exposure and feedback record, then
+  `:concurrency` (default 50) records at once, and checks that no call throws,
+  rejects or takes longer than `:timeout-ms`.
 
-  Optionally takes `:read-back`, a function returning (a promise of) every
-  record the recorder has stored, to check each record arrived.
+  If you pass `:read-back`, a function that returns (or returns a promise of)
+  everything the recorder has stored, the check also confirms that every
+  record arrived.
 
   Reasons: `:throws`, `:hangs`, `:concurrent-failure`, `:missing-records`."
   ([recorder] (check-recorder recorder {}))
   ([recorder {:keys [timeout-ms concurrency read-back] :or {timeout-ms 5000 concurrency 50}}]
    (let [samples (vec (sample-records))
-         ;; Fresh records (new ids), so an idempotent recorder stores every one.
+         ;; New records with new ids, so a recorder that ignores duplicate ids still
+         ;; has to store every one.
          concurrent (take concurrency (apply concat (repeatedly sample-records)))
          call (fn [[kind record]] (settle (attempt recorder kind record) timeout-ms))]
      (p/let [sequential (p/loop [i 0 acc []]

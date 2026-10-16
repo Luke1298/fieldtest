@@ -7,7 +7,7 @@
    [edamame.core :as e]))
 
 (def ^:private banned-text
-  "Text that must never appear under src/."
+  "Strings that aren't allowed anywhere under src/, with the reason for each."
   [["System/getenv" "reads the environment"]
    ["System/getProperty" "reads system properties"]
    ["process.env" "reads the environment"]

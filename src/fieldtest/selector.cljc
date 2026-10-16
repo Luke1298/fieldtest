@@ -64,8 +64,9 @@
     (random-bucket)))
 
 (defn weighted-hash
-  "The built-in selector. A unit whose bucket falls in an arm the client does
-  not support gets `:default`, never a different candidate."
+  "The built-in selector. If a unit's bucket belongs to an arm the client
+  doesn't support, the unit gets `:default`. It isn't moved to another
+  candidate, because that candidate would then get more than its weight."
   [{:keys [config supported-arms] :as request}]
   (let [arm (arm-for-bucket (:weights config) (bucket request))]
     (if (contains? (set supported-arms) arm) arm :default)))

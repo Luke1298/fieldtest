@@ -49,7 +49,7 @@
           (let [c {:decisions decisions :reporter reporter}]
             (client/timed c {:exposure-id (:exposure-id (client/decision c experiment)) :metric "checkout.total"}
                           #(:result (client/branch c experiment {:default compute-total :candidate compute-total} [1 2 3])))))))
-    ;; Reporting is fire-and-forget; let the last records land.
+    ;; report! doesn't wait, so give the last records time to arrive.
     (Thread/sleep 200)
     (let [by-arm (stats @store)
           total (reduce + (map :count (vals by-arm)))]

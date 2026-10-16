@@ -38,8 +38,8 @@
             {:keys [arm exposure-id]} (client/decision c sort-impl)
             sorted (client/timed c {:exposure-id exposure-id :metric "job.sort"}
                                  #(:result (client/branch c sort-impl {:default sort-current :sort-by sort-with-sort-by} items)))
-            ;; Reporting is fire-and-forget. A real Lambda should keep the
-            ;; event loop alive (or flush) before returning; here we wait a beat.
+            ;; report! doesn't wait for the HTTP call. A real Lambda has to keep the
+            ;; event loop alive until it finishes; this example just waits 100 ms.
             _ (p/delay 100)]
       (clj->js {:jobId jobId :sorted sorted :arm (some-> arm name) :exposureId exposure-id}))))
 

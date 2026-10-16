@@ -1,5 +1,5 @@
 (ns fieldtest.client
-  "Runs the decided arm of an operation and reports how it went.
+  "Running the arm the server chose, and reporting how it did.
 
   A client is a map:
 
@@ -43,9 +43,11 @@
 
 (defn decide
   "Asks `decider` for decisions on `experiments` and returns a promise of a map
-  of experiment name to decision. Never rejects: when the decider fails, or
-  takes longer than `:timeout-ms` (default 1,000), the promise resolves to
-  `{}` and every branch runs `:default` untracked.
+  of experiment name to decision.
+
+  The promise doesn't reject. If the decider fails or takes longer than
+  `:timeout-ms` (default 1,000), it resolves to `{}`, and every branch then
+  runs `:default` without reporting anything.
 
   Options: `:sticky-key`, `:context`, `:timeout-ms` and `:on-error`."
   ([decider experiments] (decide decider experiments {}))
@@ -73,13 +75,14 @@
     (server/feedback! server batch)))
 
 (defn report!
-  "Sends one piece of feedback through the client's reporter, fire-and-forget.
-  Returns nil.
+  "Sends one piece of feedback through the client's reporter without waiting
+  for it, and returns nil.
 
   `feedback` takes `:exposure-id` (or `:exposure-ids`), `:metric`, `:value`,
   `:value-unit`, `:outcome` and optional `:attrs`; see
-  `fieldtest.records/feedback`. Does nothing when there is no exposure id.
-  Invalid feedback and reporter failures go to `:on-error` and never throw."
+  `fieldtest.records/feedback`. If there is no exposure id, nothing is sent.
+  Invalid feedback and reporter errors are passed to `:on-error` instead of
+  being thrown."
   [{:keys [reporter] :as client} {:keys [exposure-id exposure-ids] :as feedback}]
   (when (and reporter (or (some? exposure-id) (seq exposure-ids)))
     (try
@@ -100,17 +103,19 @@
       d)))
 
 (defn branch
-  "Runs exactly one of `arms`, a map of arm keyword to function, with `args`,
-  and returns `{:result r :exposure-id id}`.
+  "Calls one of the functions in `arms`, a map of arm keyword to function, with
+  `args`, and returns `{:result r :exposure-id id}`.
 
-  The decided arm runs when the client has a decision for this experiment and
-  revision. Without one, `:default` runs and `:exposure-id` is nil. A decision for an
-  arm that `arms` doesn't declare runs `:default`, keeps the exposure id and reports
-  `unsupported-arm` feedback.
+  If the client has a decision for this experiment and revision, the decided
+  arm runs. If it doesn't, `:default` runs and `:exposure-id` is nil. If the
+  decision names an arm that isn't in `arms`, `:default` runs, the exposure id
+  is kept, and `unsupported-arm` feedback is reported.
 
-  A promise result is returned as the same promise, and an error thrown or
-  rejected by the arm reaches the caller unchanged. No other arm is ever tried.
-  Throws ex-info before running anything when `arms` has no `:default`."
+  When the arm returns a promise, `:result` is that same promise. If the arm
+  throws or its promise rejects, the caller gets the original error, and
+  fieldtest doesn't try a different arm.
+
+  Throws ex-info, before calling anything, if `arms` has no `:default`."
   [client experiment arms & args]
   (when-not (ifn? (get arms :default))
     (throw (ex-info (str "A branch must declare a :default arm: " (:experiment experiment))
@@ -153,13 +158,15 @@
      :cljs (p/promise? x)))
 
 (defn timed
-  "Calls `(apply f args)`, reports its duration in ms as feedback, and returns
-  its result (a value or the same promise) or rethrows its error unchanged.
+  "Calls `(apply f args)` and reports how long it took, in ms, as feedback.
+  Returns whatever `f` returns, including the same promise if it returns one,
+  and rethrows anything `f` throws.
 
-  Reports outcome `ok` on success and `error` when `f` throws or rejects. With
-  `:timeout-ms`, reports `timeout` once that time passes instead, without
-  cancelling the operation. `opts` holds `:exposure-id` (nothing is reported
-  without one), `:metric`, and optional `:attrs` and `:timeout-ms`."
+  The outcome is `ok` if `f` succeeds and `error` if it throws or rejects. If
+  `:timeout-ms` is given and `f` hasn't finished by then, `timeout` is
+  reported instead; `f` keeps running. `opts` takes `:exposure-id` (without
+  one, nothing is reported), `:metric`, and optionally `:attrs` and
+  `:timeout-ms`."
   [client {:keys [exposure-id metric attrs timeout-ms]} f & args]
   (let [start (now-ms)
         reported? (atom false)

@@ -1,6 +1,7 @@
 (ns fieldtest.hash
-  "32-bit FNV-1a over the UTF-8 bytes of a string. Every runtime gives the same
-  value for the same string; the selector test vectors depend on it.")
+  "32-bit FNV-1a over the UTF-8 bytes of a string. The JVM, ClojureScript and
+  nbb implementations have to agree, and the selector test vectors check
+  that they do.")
 
 (def ^:private offset-basis 2166136261)
 (def ^:private prime 16777619)

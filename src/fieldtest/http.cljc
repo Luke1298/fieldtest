@@ -1,13 +1,15 @@
 (ns fieldtest.http
-  "Carries decide requests and feedback between clients and a server over HTTP.
+  "HTTP transport for decide requests and feedback.
 
-  Every wire document is JSON with the same fields as its in-process form plus
-  a format version, `\"v\": 1`. New versions only add fields, so readers ignore
-  fields they don't know; a server rejects a version it doesn't know with 400.
+  Each request and response is a JSON document with the same fields as the
+  in-process version, plus `\"v\": 1`. Later versions will only add fields, so
+  readers skip fields they don't recognise. A server answers 400 to a version
+  it doesn't know.
 
   The handlers take `{:body ...}` and return a promise of `{:status :headers
-  :body}`, so they mount in any web framework. Authentication, rate limiting
-  and routing are left to the host."
+  :body}`, which makes them easy to mount in Ring, http-kit or anything else.
+  They don't do authentication, rate limiting or routing; wrap them in
+  whatever your server already uses."
   (:require
    [fieldtest.json :as json]
    [fieldtest.server :as server]

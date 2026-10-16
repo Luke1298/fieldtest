@@ -1,10 +1,10 @@
 (ns fieldtest.records
-  "The records a recorder receives: exposures and feedback.
+  "Constructors and validation for the two kinds of record a recorder gets.
 
-  An exposure is the server's record that it made a decision. Feedback is a
-  measurement a client reports against one or more exposure ids. Feedback
-  never carries the arm, revision or sticky key; those are found by joining on
-  the exposure id."
+  An exposure is written by the server each time it makes a decision, and
+  holds the arm, revision, sticky key and context. Feedback is a measurement
+  the client reports later, and it refers to one or more exposures by id. To
+  find out which arm a measurement came from, join it to its exposure."
   (:require
    [clojure.string :as str]))
 
@@ -13,7 +13,8 @@
   #{:ms :bytes :count})
 
 (def outcomes
-  "How the measured operation ended. Failures are feedback too."
+  "Possible outcomes for a measured operation. Errors and timeouts are reported
+  the same way as successes."
   #{:ok :error :timeout :abandoned :fallback :unsupported-arm})
 
 (def max-attr-length

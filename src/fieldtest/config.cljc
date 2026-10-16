@@ -1,7 +1,7 @@
 (ns fieldtest.config
-  "Experiment configs: the data a config source returns.
+  "Reading and validating experiment configs.
 
-  A config source returns a map of experiment name to config:
+  A config source returns a map of experiment name to config, like this:
 
       {\"asset-host\" {:revision 3 :weights {:cdn 20} :sticky :hashed}}
 
@@ -109,12 +109,14 @@
 
 (defn cached
   "Wraps a config source so it is called at most once per `:ttl-ms`
-  (default 30,000). Concurrent calls share one fetch.
+  (default 30,000). Calls made while a fetch is in progress wait for that
+  fetch instead of starting another.
 
-  A failed fetch is not cached as a value: the failure is passed on, so the
-  server keeps its last good configs and reports it, and the source is not
-  called again for `:retry-ms` (default 5,000), during which calls fail with
-  the same error. `:clock` returns the current time in milliseconds."
+  When a fetch fails, the error is passed through to the caller, so the
+  server can fall back to its last good configs and report the problem. The
+  source then isn't called again for `:retry-ms` (default 5,000); calls in
+  that window get the same error. `:clock` returns the current time in
+  milliseconds and is there for tests."
   ([source] (cached source {}))
   ([source {:keys [ttl-ms retry-ms clock] :or {ttl-ms 30000 retry-ms 5000 clock now-ms}}]
    (let [state (atom {:expires-at 0 :result nil})

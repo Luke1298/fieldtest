@@ -1,9 +1,9 @@
 (ns fieldtest.json
-  "JSON encoding for the wire and for decision handoff.
+  "JSON encoding for the HTTP transport and for decision handoff.
 
-  cheshire on the JVM and `js/JSON` in ClojureScript and nbb. cheshire is only
-  ever required inside the `:clj` branch, so ClojureScript builds and nbb never
-  load it; `bb lint:no-infra` enforces that.
+  Uses cheshire on the JVM and `js/JSON` in ClojureScript and nbb. cheshire is
+  required only inside the `:clj` branch so that ClojureScript builds and nbb
+  don't load it, and `bb lint:no-infra` checks this.
 
   Decoding keywordizes object keys. Keywords encode as their full name
   (`:a/b` -> \"a/b\") and insts as ISO-8601 strings with milliseconds."

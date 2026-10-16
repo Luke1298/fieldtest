@@ -25,8 +25,8 @@
           (spit path line :append true))))))
 
 (def ^:private cors
-  ;; The browser-client example is served from another port. A real host
-  ;; would restrict this to its own origins.
+  ;; The browser-client example is served from another port. A real
+  ;; deployment should only allow its own origins.
   {"access-control-allow-origin" "*"
    "access-control-allow-methods" "POST, OPTIONS"
    "access-control-allow-headers" "content-type"})

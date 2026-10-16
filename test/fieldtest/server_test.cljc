@@ -39,7 +39,7 @@
 (defn- invalid-request? [{:keys [err]}]
   (= ::server/invalid-request (:type (ex-data err))))
 
-;; 4.1
+;; Construction
 
 (deftest construction
   (testing "defaults to the weighted-hash selector"
@@ -52,7 +52,7 @@
   (testing "the error hook is optional"
     (is (map? (server/server {:config-source (fn [] {}) :recorder (fn [_ _])})))))
 
-;; 4.2
+;; Deciding
 
 (defasynctest one-exposure-per-decision
   (let [{:keys [server store]} (setup)]
@@ -144,7 +144,7 @@
           result (server/decide server {:experiments []})]
     (is (= {:decisions []} result))))
 
-;; 4.3
+;; Failure isolation
 
 (defasynctest config-source-failures-keep-last-good
   (p/do
@@ -199,7 +199,7 @@
           {:keys [decisions]} (server/decide server (request asset-host))]
     (is (= [:default] (map :arm decisions)))))
 
-;; 4.4
+;; Feedback
 
 (def fb {:exposure-ids ["e1"] :metric "page-load" :value 12 :value-unit :ms :outcome :ok :attrs {:route "x"}})
 

@@ -25,7 +25,7 @@
 (defn- settle [pr]
   (-> pr (p/then (fn [v] {:ok v})) (p/catch (fn [e] {:err e}))))
 
-;; 5.1
+;; Branching
 
 (deftest branch-runs-the-decided-arm
   (let [{:keys [client sent]} (recording-client (decision :b))]
@@ -85,7 +85,7 @@
     (p/let [{:keys [err]} (settle result)]
       (is (= boom err)))))
 
-;; 5.2
+;; Deciders
 
 (defn- test-server []
   (let [store (atom [])]
@@ -110,7 +110,7 @@
       (is (= [{} {} {}] results))
       (is (= 3 (count @errors))))))
 
-;; 5.3
+;; Reporters
 
 (defasynctest in-process-reporter
   (let [{:keys [server store]} (test-server)
@@ -137,7 +137,7 @@
     (client/report! client {:exposure-ids [] :metric "m" :value 1 :value-unit :ms :outcome :ok})
     (is (empty? @sent))))
 
-;; 5.4
+;; Timing
 
 (defn- outcome [sent] (map #(select-keys % [:exposure-ids :metric :outcome :value-unit]) sent))
 
@@ -192,7 +192,7 @@
     (is (= 2 (client/timed client {:metric "work"} inc 1)))
     (is (empty? @sent))))
 
-;; 5.5
+;; Handoff
 
 (deftest decisions-round-trip-through-json
   (let [decisions {"asset-host" {:experiment "asset-host" :revision 3 :arm :b :exposure-id "e1"}

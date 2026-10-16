@@ -19,7 +19,7 @@
           exposures ((ns-resolve ns-name 'memory/exposures) @store)]
       (is (contains? #{"https://app.example.com/logo.png" "https://cdn.example.com/logo.png"} result))
       (is (= 1 (count exposures)))
-      ;; Feedback is fire-and-forget; give it a moment to land.
+      ;; report! doesn't wait, so poll until the feedback arrives.
       (loop [tries 50]
         (when (and (pos? tries) (empty? ((ns-resolve ns-name 'memory/feedback) @store)))
           (Thread/sleep 10)

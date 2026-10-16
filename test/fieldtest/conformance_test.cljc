@@ -1,8 +1,8 @@
 (ns fieldtest.conformance-test
-  "A/A conformance: identical code in :default and :b, run from a client through a
-  server for many simulated sticky keys, in-process and over the HTTP
-  handlers. The arm split must match the weights and every exposure must join
-  to its feedback."
+  "An A/A test of the whole library. :default and :candidate run the same
+  code, and many simulated sticky keys go from a client through a server,
+  both in-process and over the HTTP handlers. The split between arms has to
+  match the weights, and every exposure has to have matching feedback."
   (:require
    [clojure.test :refer [is]]
    [fieldtest.client :as client]
@@ -12,7 +12,7 @@
    [fieldtest.test-macros :refer [defasynctest]]
    [promesa.core :as p]))
 
-(def experiment {:experiment "aa" :revision 1 :arms [:default :b]})
+(def experiment {:experiment "aa" :revision 1 :arms [:default :candidate]})
 
 (defn- operation
   "The operation under test. Both arms run exactly this."
@@ -33,11 +33,11 @@
              :reporter (http/reporter "feedback" {:post post})})))
 
 (defn- run-aa
-  "Runs `n` sticky keys through a client and server with `:b` at `weight`.
-  Returns a promise of the arms chosen and the recorded store."
+  "Runs `n` sticky keys through a client and server with `:candidate` at
+  `weight`. Returns a promise of the arms chosen and the recorded store."
   [mode weight n]
   (let [store (atom [])
-        srv (server/server {:config-source (memory/config-source {"aa" {:revision 1 :weights {:b weight} :sticky :hashed}})
+        srv (server/server {:config-source (memory/config-source {"aa" {:revision 1 :weights {:candidate weight} :sticky :hashed}})
                             :recorder (memory/recorder store)})
         {:keys [decider reporter]} (transport srv mode)
         pending (atom [])
@@ -49,7 +49,7 @@
                   (for [i (range n)]
                     (p/let [decisions (client/decide decider [experiment] {:sticky-key (str "user:" i) :timeout-ms 30000})
                             c {:decisions decisions :reporter tracked-reporter}
-                            {:keys [exposure-id]} (client/branch c experiment {:default (constantly :default) :b (constantly :b)})
+                            {:keys [exposure-id]} (client/branch c experiment {:default (constantly :default) :candidate (constantly :candidate)})
                             arm (get-in decisions ["aa" :arm])
                             v (client/timed c {:exposure-id exposure-id :metric "aa.op"} operation i)]
                       (when-not (= (* 2 i) v)
@@ -66,16 +66,16 @@
 (defn- check-split [mode]
   (p/let [n 20000
           {:keys [arms store]} (run-aa mode 50 n)
-          share (* 100.0 (/ (count (filter #{:b} arms)) n))]
+          share (* 100.0 (/ (count (filter #{:candidate} arms)) n))]
     (is (= n (count arms)) (str mode ": every key got a decision"))
-    (is (<= 48.5 share 51.5) (str mode ": :b share " share " is within 1.5 points of 50"))
+    (is (<= 48.5 share 51.5) (str mode ": :candidate share " share " is within 1.5 points of 50"))
     (is (= n (count (memory/exposures store))) (str mode ": one exposure per decision"))
     (is (= n (count (memory/feedback store))) (str mode ": one feedback per operation"))
     (is (joins? store) (str mode ": every exposure joins to its feedback"))))
 
 (defn- check-zero [mode]
   (p/let [{:keys [arms store]} (run-aa mode 0 2000)]
-    (is (= #{:default} (set arms)) (str mode ": 0% gives no :b"))
+    (is (= #{:default} (set arms)) (str mode ": 0% gives no :candidate"))
     (is (joins? store) (str mode ": :default exposures join to their feedback too"))))
 
 (defasynctest aa-in-process
