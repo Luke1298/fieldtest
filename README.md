@@ -96,7 +96,7 @@ Your code keeps working when fieldtest has problems. Without a decision, `branch
 
 Decisions can also be passed along with `client/decisions->json`. A server-rendered page can embed them, or a Lambda can receive them in its event, and branch on them without asking the server again.
 
-## Other libraries
+## How it differs from existing libraries
 
 Touchstone is aimed at conversion testing in web apps, keeps its state in Redis, and picks arms with a bandit. fieldtest is aimed at latency and error rates and has no storage of its own.
 
