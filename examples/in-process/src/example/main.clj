@@ -1,6 +1,6 @@
 (ns example.main
   "One JVM process that is both server and client. It runs an A/A experiment
-  (identical code in :a and :b at 50%) for 10,000 sticky keys and prints
+  (identical code in :default and :candidate, with :candidate at 50%) for 10,000 sticky keys and prints
   per-arm stats from the in-memory recorder."
   (:require
    [fieldtest.client :as client]
@@ -8,7 +8,7 @@
    [fieldtest.server :as server]
    [promesa.core :as p]))
 
-(def experiment {:experiment "checkout-total" :revision 1 :arms [:a :b]})
+(def experiment {:experiment "checkout-total" :revision 1 :arms [:default :candidate]})
 
 (defn- compute-total
   "The operation under test. Both arms run this same code, so any difference
@@ -38,7 +38,7 @@
 (defn -main [& _]
   (let [store (atom [])
         srv (server/server {:config-source (memory/config-source
-                                            {"checkout-total" {:revision 1 :weights {:b 50} :sticky :hashed}})
+                                            {"checkout-total" {:revision 1 :weights {:candidate 50} :sticky :hashed}})
                             :recorder (memory/recorder store)})
         decider (client/in-process-decider srv)
         reporter (client/in-process-reporter srv)
@@ -48,13 +48,13 @@
         (p/let [decisions (client/decide decider [experiment] {:sticky-key (str "customer:" i)})]
           (let [c {:decisions decisions :reporter reporter}]
             (client/timed c {:exposure-id (:exposure-id (client/decision c experiment)) :metric "checkout.total"}
-                          #(:result (client/branch c experiment {:a compute-total :b compute-total} [1 2 3])))))))
+                          #(:result (client/branch c experiment {:default compute-total :candidate compute-total} [1 2 3])))))))
     ;; Reporting is fire-and-forget; let the last records land.
     (Thread/sleep 200)
     (let [by-arm (stats @store)
           total (reduce + (map :count (vals by-arm)))]
       (println (format "%d keys, %d feedback records" n total))
       (doseq [[arm {:keys [count p50 p95 errors]}] by-arm]
-        (println (format "  %s  %5d (%4.1f%%)  p50 %5.2f ms  p95 %5.2f ms  errors %d"
+        (println (format "  %-10s %5d (%4.1f%%)  p50 %5.2f ms  p95 %5.2f ms  errors %d"
                          arm count (* 100.0 (/ count total)) p50 p95 errors))))
     (shutdown-agents)))

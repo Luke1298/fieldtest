@@ -3,12 +3,15 @@
 
   A config source returns a map of experiment name to config:
 
-      {\"asset-host\" {:revision 3 :weights {:b 20} :sticky :hashed}}
+      {\"asset-host\" {:revision 3 :weights {:cdn 20} :sticky :hashed}}
 
   Input may be JSON-shaped (string keys, string arms and modes). `normalize`
   turns it into the shape above, with keyword arms and modes, and drops every
-  experiment that is invalid. `:a` is the baseline: it is never weighted and
-  receives every unit not drawn into a candidate."
+  experiment that is invalid.
+
+  Every experiment has a `:default` arm, the code that runs today. It has no
+  weight; it gets every unit that isn't drawn into one of the weighted
+  candidate arms."
   (:require
    [clojure.string :as str]
    [promesa.core :as p]))
@@ -41,7 +44,7 @@
                   (let [k (->kw arm)]
                     (cond
                       (nil? k) (str "arm " (pr-str arm) " is not a name")
-                      (= :a k) ":a is the baseline and is never weighted"
+                      (= :default k) ":default can't be weighted; it gets every unit the candidates don't"
                       (not (number-ok? w)) (str "weight for " (name k) " is not a number")
                       (neg? w) (str "weight for " (name k) " is negative"))))
                 weights)))

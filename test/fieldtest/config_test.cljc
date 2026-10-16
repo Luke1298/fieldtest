@@ -15,14 +15,14 @@
   (testing "keyword experiment names keep their full name"
     (is (= ["asset-host" "team/upload"]
            (sort (keys (config/normalize {:asset-host valid :team/upload valid}))))))
-  (testing "empty weights are valid: everyone gets :a"
+  (testing "empty weights are valid: everyone gets :default"
     (is (= {"x" {:revision 0 :weights {} :sticky :none}}
            (config/normalize {"x" {:revision 0 :weights {} :sticky :none}})))))
 
 (deftest baseline-is-never-weighted
-  (is (= {} (config/normalize {"x" (assoc-in valid [:weights :a] 50)})))
-  (is (= {} (config/normalize {"x" {"revision" 1 "weights" {"a" 50} "sticky" "none"}})))
-  (is (re-find #":a is the baseline" (get (config/problems {"x" (assoc-in valid [:weights :a] 1)}) "x"))))
+  (is (= {} (config/normalize {"x" (assoc-in valid [:weights :default] 50)})))
+  (is (= {} (config/normalize {"x" {"revision" 1 "weights" {"default" 50} "sticky" "none"}})))
+  (is (re-find #":default can.t be weighted" (get (config/problems {"x" (assoc-in valid [:weights :default] 1)}) "x"))))
 
 (deftest round-trips-through-json
   (let [configs {"asset-host" valid "upload-path" {:revision 1 :weights {:b 25.5} :sticky :none}}]

@@ -9,8 +9,8 @@ clojure -M -m example.server        # listens on :8723
 Ask for a decision:
 
 ```sh
-curl -s localhost:8723/decide -d '{"v":1,"sticky-key":"user:42","experiments":[{"experiment":"asset-host","revision":1,"arms":["a","b"]}]}'
-# {"decisions":[{"experiment":"asset-host","revision":1,"arm":"b","exposure-id":"…"}],"v":1}
+curl -s localhost:8723/decide -d '{"v":1,"sticky-key":"user:42","experiments":[{"experiment":"asset-host","revision":1,"arms":["default","cdn"]}]}'
+# {"decisions":[{"experiment":"asset-host","revision":1,"arm":"cdn","exposure-id":"…"}],"v":1}
 ```
 
 Then send feedback for the exposure id you got back:

@@ -90,10 +90,10 @@
 
 (defn- supported-sets [weights]
   (let [candidates (sort (keys weights))]
-    (distinct [(conj (set candidates) :a)
-               #{:a}
+    (distinct [(conj (set candidates) :default)
+               #{:default}
                (set (take 1 candidates))
-               (conj (set (drop 1 candidates)) :a)])))
+               (conj (set (drop 1 candidates)) :default)])))
 
 (defn- selector-requests []
   (for [cfg selector-configs
@@ -117,9 +117,9 @@
     (cond
       timeout [(failure :hangs (str "selector did not settle within " timeout-ms " ms") :request request)]
       error [(failure :throws (str "selector threw on valid input: " (error-message error)) :request request)]
-      (= :a arm) []
+      (= :default arm) []
       (not (contains? (:weights config) arm))
-      [(failure :unconfigured-arm (str "selector chose " (pr-str value) ", which is neither :a nor a configured candidate")
+      [(failure :unconfigured-arm (str "selector chose " (pr-str value) ", which is neither :default nor a configured candidate")
                 :request request)]
       (not (contains? supported-arms arm))
       [(failure :unsupported-arm (str "selector chose " (pr-str value) ", which the client does not support")
@@ -128,7 +128,7 @@
 
 (defn check-selector
   "Checks a selector over a matrix of valid requests: it never throws or
-  hangs, it only chooses `:a` or a configured candidate, it respects the
+  hangs, it only chooses `:default` or a configured candidate, it respects the
   client's supported arms, and in `hashed` mode it chooses the same arm every
   time for the same sticky key.
 
@@ -155,7 +155,7 @@
 (defn- sample-records []
   (let [t (records/now)
         exposure (fn [m] (records/exposure (merge {:exposure-id (ids/exposure-id) :experiment "test-kit"
-                                                   :revision 1 :arm :a :created-at t}
+                                                   :revision 1 :arm :default :created-at t}
                                                   m)))]
     (concat
      [[:exposure (exposure {})]

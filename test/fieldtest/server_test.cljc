@@ -28,7 +28,7 @@
    :context {:runtime "test"}
    :experiments (vec experiments)})
 
-(def asset-host {:experiment "asset-host" :revision 3 :arms [:a :b]})
+(def asset-host {:experiment "asset-host" :revision 3 :arms [:default :b]})
 
 (defn- settle
   "A promise of `{:err e}` or `{:ok v}`. (A handler that returns a Throwable
@@ -57,14 +57,14 @@
 (defasynctest one-exposure-per-decision
   (let [{:keys [server store]} (setup)]
     (p/let [{:keys [decisions]} (server/decide server (request asset-host
-                                                               {:experiment "upload-path" :revision 1 :arms [:a :b :c]}
-                                                               {:experiment "missing" :revision 1 :arms [:a :b]}))
+                                                               {:experiment "upload-path" :revision 1 :arms [:default :b :c]}
+                                                               {:experiment "missing" :revision 1 :arms [:default :b]}))
             exposures (memory/exposures @store)]
       (is (= 3 (count decisions)))
       (is (= 3 (count exposures)))
       (is (= ["asset-host" "upload-path" "missing"] (map :experiment decisions)))
       (is (= :b (:arm (first decisions))))
-      (is (= :a (:arm (last decisions))))
+      (is (= :default (:arm (last decisions))))
       (doseq [d decisions
               :let [e (first (filter #(= (:exposure-id d) (:exposure-id %)) exposures))]]
         (is (= (select-keys d [:experiment :revision :arm :exposure-id])
@@ -74,13 +74,13 @@
         (is (inst? (:created-at e))))
       (is (= (count (set (map :exposure-id decisions))) 3)))))
 
-(defasynctest absent-or-mismatched-revisions-get-a
+(defasynctest absent-or-mismatched-revisions-get-default
   (let [{:keys [server store]} (setup :selector (fn [_] (throw (ex-info "selector must not be called" {}))))]
     (p/let [{:keys [decisions]} (server/decide server (request (assoc asset-host :revision 2)
-                                                               {:experiment "nope" :revision 3 :arms [:a :b]}))]
-      (is (= [:a :a] (map :arm decisions)))
+                                                               {:experiment "nope" :revision 3 :arms [:default :b]}))]
+      (is (= [:default :default] (map :arm decisions)))
       (is (= [2 3] (map :revision decisions)) "decisions echo the requested revision")
-      (is (= 2 (count (memory/exposures @store))) ":a decisions are recorded too"))))
+      (is (= 2 (count (memory/exposures @store))) ":default decisions are recorded too"))))
 
 (defasynctest no-sticky-key-is-decided-as-none
   (let [seen (atom [])
@@ -92,26 +92,26 @@
 
 (defasynctest selector-sees-the-request
   (let [seen (atom nil)
-        {:keys [server]} (setup :selector (fn [m] (reset! seen m) :a))]
+        {:keys [server]} (setup :selector (fn [m] (reset! seen m) :default))]
     (p/let [_ (server/decide server (request asset-host))]
       (is (= {:experiment "asset-host"
               :config (get configs "asset-host")
               :sticky-key "user:1"
-              :supported-arms #{:a :b}
+              :supported-arms #{:default :b}
               :context {:runtime "test"}}
              @seen)))))
 
 (defasynctest only-supported-arms
   (p/do
     (let [{:keys [server errors]} (setup :selector (fn [_] :c))]
-      (p/let [{:keys [decisions]} (server/decide server (request {:experiment "upload-path" :revision 1 :arms [:a :b]}))]
-        (is (= [:a] (map :arm decisions)) "configured but unsupported")
+      (p/let [{:keys [decisions]} (server/decide server (request {:experiment "upload-path" :revision 1 :arms [:default :b]}))]
+        (is (= [:default] (map :arm decisions)) "configured but unsupported")
         (is (= :selector (:plugin (first @errors))))))
     (p/let [{:keys [server]} (setup :selector (fn [_] :z))
-            {:keys [decisions]} (server/decide server (request {:experiment "upload-path" :revision 1 :arms [:a :z]}))]
-      (is (= [:a] (map :arm decisions)) "supported but not configured"))
+            {:keys [decisions]} (server/decide server (request {:experiment "upload-path" :revision 1 :arms [:default :z]}))]
+      (is (= [:default] (map :arm decisions)) "supported but not configured"))
     (p/let [{:keys [server]} (setup :selector (fn [_] "c"))
-            {:keys [decisions]} (server/decide server (request {:experiment "upload-path" :revision 1 :arms ["a" "b" "c"]}))]
+            {:keys [decisions]} (server/decide server (request {:experiment "upload-path" :revision 1 :arms ["default" "b" "c"]}))]
       (is (= [:c] (map :arm decisions)) "string arms from JSON are accepted"))))
 
 (defasynctest async-selectors
@@ -150,7 +150,7 @@
   (p/do
     (p/doseq [[desc failing] [["throws" (fn [] (throw (ex-info "down" {})))]
                               ["rejects" (fn [] (p/rejected (ex-info "down" {})))]
-                              ["returns bad data" (fn [] [:not :a :map])]]]
+                              ["returns bad data" (fn [] [:not :default :map])]]]
       (let [healthy? (atom true)
             {:keys [server errors]} (setup :config-source (fn [] (if @healthy? configs (failing))))]
         (p/let [first-run (server/decide server (request asset-host))
@@ -161,22 +161,22 @@
           (is (= [:config-source] (map :plugin @errors)) desc))))
     (p/let [{:keys [server errors]} (setup :config-source (fn [] (throw (ex-info "never up" {}))))
             {:keys [decisions]} (server/decide server (request asset-host))]
-      (is (= [:a] (map :arm decisions)) "no configs read yet: everything is :a")
+      (is (= [:default] (map :arm decisions)) "no configs read yet: everything is :default")
       (is (= 1 (count @errors))))))
 
 (defasynctest invalid-experiments-are-reported
   (p/let [{:keys [server errors]} (setup :config-source (fn [] (assoc configs "broken" {:revision 1})))
-          {:keys [decisions]} (server/decide server (request asset-host {:experiment "broken" :revision 1 :arms [:a :b]}))]
-    (is (= [:b :a] (map :arm decisions)))
+          {:keys [decisions]} (server/decide server (request asset-host {:experiment "broken" :revision 1 :arms [:default :b]}))]
+    (is (= [:b :default] (map :arm decisions)))
     (is (= {"broken" "weights are missing"} (:problems (ex-data (:error (first @errors))))))))
 
-(defasynctest selector-failures-give-a
+(defasynctest selector-failures-give-default
   (p/doseq [[desc sel] [["throws" (fn [_] (throw (ex-info "boom" {})))]
                         ["rejects" (fn [_] (p/rejected (ex-info "boom" {})))]
                         ["returns nil" (fn [_] nil)]]]
     (p/let [{:keys [server errors store]} (setup :selector sel)
             {:keys [decisions]} (server/decide server (request asset-host))]
-      (is (= [:a] (map :arm decisions)) desc)
+      (is (= [:default] (map :arm decisions)) desc)
       (is (= 1 (count (memory/exposures @store))) desc)
       (is (= [{:plugin :selector :experiment "asset-host"}]
              (map #(select-keys % [:plugin :experiment]) @errors))
@@ -197,7 +197,7 @@
   (p/let [{:keys [server]} (setup :selector (fn [_] (throw (ex-info "boom" {})))
                                   :error-hook (fn [_] (throw (ex-info "hook too" {}))))
           {:keys [decisions]} (server/decide server (request asset-host))]
-    (is (= [:a] (map :arm decisions)))))
+    (is (= [:default] (map :arm decisions)))))
 
 ;; 4.4
 

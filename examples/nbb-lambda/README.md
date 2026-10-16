@@ -13,4 +13,4 @@ npx nbb -m example.handler event-handoff.json
 npx nbb -m example.handler event-ask.json
 ```
 
-Each run prints the handler's response and appends feedback to `../ring-server/records.jsonl`; `event-ask.json` adds an exposure as well. If the server is down, the sort still runs, on `:a`, and nothing is reported.
+Each run prints the handler's response and appends feedback to `../ring-server/records.jsonl`; `event-ask.json` adds an exposure as well. If the server is down, the sort still runs, on `:default`, and nothing is reported.

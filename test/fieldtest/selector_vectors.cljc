@@ -7,205 +7,205 @@
 (def vectors
   [{:note "first bucket"
     :experiment "asset-host" :revision 3 :sticky-key "u4842"
-    :weights {:b 20} :supported-arms #{:a :b}
+    :weights {:b 20} :supported-arms #{:b :default}
     :bucket 0 :arm :b}
    {:note "last drawn bucket of b at 20%"
     :experiment "asset-host" :revision 3 :sticky-key "u6913"
-    :weights {:b 20} :supported-arms #{:a :b}
+    :weights {:b 20} :supported-arms #{:b :default}
     :bucket 1999 :arm :b}
    {:note "first undrawn bucket at 20%"
     :experiment "asset-host" :revision 3 :sticky-key "u2134"
-    :weights {:b 20} :supported-arms #{:a :b}
-    :bucket 2000 :arm :a}
+    :weights {:b 20} :supported-arms #{:b :default}
+    :bucket 2000 :arm :default}
    {:note "last bucket"
     :experiment "asset-host" :revision 3 :sticky-key "u6702"
-    :weights {:b 20} :supported-arms #{:a :b}
-    :bucket 9999 :arm :a}
+    :weights {:b 20} :supported-arms #{:b :default}
+    :bucket 9999 :arm :default}
    {:note "weight 0 draws nothing"
     :experiment "asset-host" :revision 3 :sticky-key "u4842"
-    :weights {:b 0} :supported-arms #{:a :b}
-    :bucket 0 :arm :a}
+    :weights {:b 0} :supported-arms #{:b :default}
+    :bucket 0 :arm :default}
    {:note "100% draws the last bucket"
     :experiment "asset-host" :revision 3 :sticky-key "u6702"
-    :weights {:b 100} :supported-arms #{:a :b}
+    :weights {:b 100} :supported-arms #{:b :default}
     :bucket 9999 :arm :b}
    {:note "fractional weight, last drawn"
     :experiment "asset-host" :revision 3 :sticky-key "u6692"
-    :weights {:b 12.5} :supported-arms #{:a :b}
+    :weights {:b 12.5} :supported-arms #{:b :default}
     :bucket 1249 :arm :b}
    {:note "fractional weight, first undrawn"
     :experiment "asset-host" :revision 3 :sticky-key "u5928"
-    :weights {:b 12.5} :supported-arms #{:a :b}
-    :bucket 1250 :arm :a}
+    :weights {:b 12.5} :supported-arms #{:b :default}
+    :bucket 1250 :arm :default}
    {:note "two candidates: b last drawn"
     :experiment "upload-path" :revision 1 :sticky-key "u162"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b :c}
+    :weights {:b 30 :c 30} :supported-arms #{:b :c :default}
     :bucket 2999 :arm :b}
    {:note "two candidates: b first undrawn"
     :experiment "upload-path" :revision 1 :sticky-key "u7401"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b :c}
-    :bucket 3000 :arm :a}
+    :weights {:b 30 :c 30} :supported-arms #{:b :c :default}
+    :bucket 3000 :arm :default}
    {:note "two candidates: end of b slice"
     :experiment "upload-path" :revision 1 :sticky-key "u9107"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b :c}
-    :bucket 4999 :arm :a}
+    :weights {:b 30 :c 30} :supported-arms #{:b :c :default}
+    :bucket 4999 :arm :default}
    {:note "two candidates: c first bucket"
     :experiment "upload-path" :revision 1 :sticky-key "u101"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b :c}
+    :weights {:b 30 :c 30} :supported-arms #{:b :c :default}
     :bucket 5000 :arm :c}
    {:note "two candidates: c last drawn"
     :experiment "upload-path" :revision 1 :sticky-key "u18116"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b :c}
+    :weights {:b 30 :c 30} :supported-arms #{:b :c :default}
     :bucket 7999 :arm :c}
    {:note "two candidates: c first undrawn"
     :experiment "upload-path" :revision 1 :sticky-key "u4941"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b :c}
-    :bucket 8000 :arm :a}
+    :weights {:b 30 :c 30} :supported-arms #{:b :c :default}
+    :bucket 8000 :arm :default}
    {:note "clamping: b clamped, last bucket of slice"
     :experiment "upload-path" :revision 1 :sticky-key "c4177"
-    :weights {:b 80 :c 10} :supported-arms #{:a :b :c}
+    :weights {:b 80 :c 10} :supported-arms #{:b :c :default}
     :bucket 4999 :arm :b}
    {:note "clamping: c slice start"
     :experiment "upload-path" :revision 1 :sticky-key "c1188"
-    :weights {:b 80 :c 10} :supported-arms #{:a :b :c}
+    :weights {:b 80 :c 10} :supported-arms #{:b :c :default}
     :bucket 5000 :arm :c}
    {:note "clamping: c last drawn"
     :experiment "upload-path" :revision 1 :sticky-key "c5273"
-    :weights {:b 80 :c 10} :supported-arms #{:a :b :c}
+    :weights {:b 80 :c 10} :supported-arms #{:b :c :default}
     :bucket 5999 :arm :c}
    {:note "clamping: c first undrawn"
     :experiment "upload-path" :revision 1 :sticky-key "c1144"
-    :weights {:b 80 :c 10} :supported-arms #{:a :b :c}
-    :bucket 6000 :arm :a}
+    :weights {:b 80 :c 10} :supported-arms #{:b :c :default}
+    :bucket 6000 :arm :default}
    {:note "three candidates clamped: b last bucket"
     :experiment "three-way" :revision 7 :sticky-key "t2792"
-    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:a :b :c :d}
+    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:b :c :d :default}
     :bucket 3332 :arm :b}
    {:note "three candidates clamped: c first bucket"
     :experiment "three-way" :revision 7 :sticky-key "t5383"
-    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:a :b :c :d}
+    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:b :c :d :default}
     :bucket 3333 :arm :c}
    {:note "three candidates clamped: c last bucket"
     :experiment "three-way" :revision 7 :sticky-key "t8278"
-    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:a :b :c :d}
+    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:b :c :d :default}
     :bucket 6665 :arm :c}
    {:note "three candidates clamped: d first bucket"
     :experiment "three-way" :revision 7 :sticky-key "t3494"
-    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:a :b :c :d}
+    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:b :c :d :default}
     :bucket 6666 :arm :d}
    {:note "three candidates clamped: d last bucket"
     :experiment "three-way" :revision 7 :sticky-key "t6357"
-    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:a :b :c :d}
+    :weights {:b 33.34 :c 33.34 :d 33.34} :supported-arms #{:b :c :d :default}
     :bucket 9999 :arm :d}
    {:note "three candidates 10% each: b last drawn"
     :experiment "three-way" :revision 7 :sticky-key "s7704"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
     :bucket 999 :arm :b}
    {:note "three candidates 10% each: b undrawn"
     :experiment "three-way" :revision 7 :sticky-key "s2311"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
-    :bucket 1000 :arm :a}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
+    :bucket 1000 :arm :default}
    {:note "three candidates 10% each: c first"
     :experiment "three-way" :revision 7 :sticky-key "s7900"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
     :bucket 3333 :arm :c}
    {:note "three candidates 10% each: c last drawn"
     :experiment "three-way" :revision 7 :sticky-key "s485"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
     :bucket 4332 :arm :c}
    {:note "three candidates 10% each: c undrawn"
     :experiment "three-way" :revision 7 :sticky-key "s2316"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
-    :bucket 4333 :arm :a}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
+    :bucket 4333 :arm :default}
    {:note "three candidates 10% each: d first"
     :experiment "three-way" :revision 7 :sticky-key "s7909"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
     :bucket 6666 :arm :d}
    {:note "three candidates 10% each: d last drawn"
     :experiment "three-way" :revision 7 :sticky-key "s6741"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
     :bucket 7665 :arm :d}
    {:note "three candidates 10% each: d undrawn"
     :experiment "three-way" :revision 7 :sticky-key "s20180"
-    :weights {:b 10 :c 10 :d 10} :supported-arms #{:a :b :c :d}
-    :bucket 7666 :arm :a}
+    :weights {:b 10 :c 10 :d 10} :supported-arms #{:b :c :d :default}
+    :bucket 7666 :arm :default}
    {:note "candidates sort by name"
     :experiment "order" :revision 1 :sticky-key "u6528"
-    :weights {:zeta 10 :alpha 10} :supported-arms #{:a :alpha :zeta}
+    :weights {:zeta 10 :alpha 10} :supported-arms #{:alpha :default :zeta}
     :bucket 100 :arm :alpha}
    {:note "candidates sort by name, second slice"
     :experiment "order" :revision 1 :sticky-key "u4434"
-    :weights {:zeta 10 :alpha 10} :supported-arms #{:a :alpha :zeta}
+    :weights {:zeta 10 :alpha 10} :supported-arms #{:alpha :default :zeta}
     :bucket 5100 :arm :zeta}
-   {:note "unsupported candidate gives a"
+   {:note "unsupported candidate gives default"
     :experiment "asset-host" :revision 3 :sticky-key "u4787"
-    :weights {:b 20} :supported-arms #{:a}
-    :bucket 10 :arm :a}
-   {:note "unsupported other candidate gives a, not b"
+    :weights {:b 20} :supported-arms #{:default}
+    :bucket 10 :arm :default}
+   {:note "unsupported other candidate gives default, not b"
     :experiment "upload-path" :revision 1 :sticky-key "u7420"
-    :weights {:b 30 :c 30} :supported-arms #{:a :b}
-    :bucket 5001 :arm :a}
+    :weights {:b 30 :c 30} :supported-arms #{:b :default}
+    :bucket 5001 :arm :default}
    {:note "same key, revision 3"
     :experiment "asset-host" :revision 3 :sticky-key "u4787"
-    :weights {:b 20} :supported-arms #{:a :b}
+    :weights {:b 20} :supported-arms #{:b :default}
     :bucket 10 :arm :b}
    {:note "same key, revision 4"
     :experiment "asset-host" :revision 4 :sticky-key "u4787"
-    :weights {:b 20} :supported-arms #{:a :b}
-    :bucket 5867 :arm :a}
+    :weights {:b 20} :supported-arms #{:b :default}
+    :bucket 5867 :arm :default}
    {:note "non-ASCII sticky key"
     :experiment "asset-host" :revision 3 :sticky-key "héllo"
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 3322 :arm :b}
    {:note "non-ASCII sticky key"
     :experiment "asset-host" :revision 3 :sticky-key "日本語のキー"
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 4519 :arm :b}
    {:note "non-ASCII sticky key"
     :experiment "asset-host" :revision 3 :sticky-key "ключ-42"
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 1136 :arm :b}
    {:note "non-ASCII sticky key"
     :experiment "asset-host" :revision 3 :sticky-key "🙂🙃"
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 3008 :arm :b}
    {:note "non-ASCII sticky key"
     :experiment "asset-host" :revision 3 :sticky-key "naïve café"
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 4419 :arm :b}
    {:note "non-ASCII sticky key"
     :experiment "asset-host" :revision 3 :sticky-key "user:ü"
-    :weights {:b 50} :supported-arms #{:a :b}
-    :bucket 8093 :arm :a}
+    :weights {:b 50} :supported-arms #{:b :default}
+    :bucket 8093 :arm :default}
    {:note "non-ASCII experiment name"
     :experiment "präfix-实验" :revision 2 :sticky-key "user:1"
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 4506 :arm :b}
    {:note "empty weights"
     :experiment "asset-host" :revision 3 :sticky-key "anyone"
-    :weights {} :supported-arms #{:a}
-    :bucket 5885 :arm :a}
+    :weights {} :supported-arms #{:default}
+    :bucket 5885 :arm :default}
    {:note "empty sticky key string is hashed"
     :experiment "asset-host" :revision 3 :sticky-key ""
-    :weights {:b 50} :supported-arms #{:a :b}
+    :weights {:b 50} :supported-arms #{:b :default}
     :bucket 2383 :arm :b}
    {:note "plain key"
     :experiment "asset-host" :revision 3 :sticky-key "user:0"
-    :weights {:b 50 :c 25} :supported-arms #{:a :b :c}
+    :weights {:b 50 :c 25} :supported-arms #{:b :c :default}
     :bucket 5574 :arm :c}
    {:note "plain key"
     :experiment "asset-host" :revision 3 :sticky-key "user:1"
-    :weights {:b 50 :c 25} :supported-arms #{:a :b :c}
+    :weights {:b 50 :c 25} :supported-arms #{:b :c :default}
     :bucket 3193 :arm :b}
    {:note "plain key"
     :experiment "asset-host" :revision 3 :sticky-key "user:2"
-    :weights {:b 50 :c 25} :supported-arms #{:a :b :c}
+    :weights {:b 50 :c 25} :supported-arms #{:b :c :default}
     :bucket 336 :arm :b}
    {:note "plain key"
     :experiment "asset-host" :revision 3 :sticky-key "user:3"
-    :weights {:b 50 :c 25} :supported-arms #{:a :b :c}
-    :bucket 7955 :arm :a}
+    :weights {:b 50 :c 25} :supported-arms #{:b :c :default}
+    :bucket 7955 :arm :default}
    {:note "plain key"
     :experiment "asset-host" :revision 3 :sticky-key "user:4"
-    :weights {:b 50 :c 25} :supported-arms #{:a :b :c}
+    :weights {:b 50 :c 25} :supported-arms #{:b :c :default}
     :bucket 6050 :arm :c}])

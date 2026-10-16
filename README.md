@@ -1,14 +1,14 @@
 # fieldtest
 
-fieldtest is a library for A/B testing code paths in production. It runs on the JVM, in the browser through shadow-cljs, and in nbb.
+fieldtest is a Clojure library for trying a new implementation of something on part of your production traffic and measuring whether it does better. It works on the JVM, in ClojureScript through shadow-cljs, and in nbb.
 
-It's meant for rewrites of code that already runs in production, like the way a page fetches its assets or the way uploads are split into chunks. You send some real traffic to the new version and check whether it's faster or fails less before switching everyone over.
+Say your app serves images from its own servers and you want to know whether a CDN would be faster for your users. You wrap the code that builds image URLs in a `branch` with two arms: `:default`, which is the code you have now, and `:cdn`, the new version. A server tells each client which arm to use, based on weights you set in config. The client runs that arm, times it, and reports back. If the CDN turns out to be faster, you raise its weight until everyone is on it, and then delete the branch.
 
-The old code stays as arm `:a` and the new code becomes `:b`. A server, which can just be a value in your own process, tells each client which arm to run. The client runs that arm once and reports how long it took and whether it worked. You move traffic toward `:b` by editing config.
+`:default` has one special job. It's what runs whenever fieldtest can't give an answer, for example because the server is down, the experiment isn't in the config, or the client was told to use an arm it doesn't have. Every branch must declare it. The other arms can have any name you like.
 
-Only one arm runs for any given call, so the new code is allowed to write to a database or call an API. A failed `:b` isn't retried on `:a`; if you want a fallback, write it into your arm and report it as one.
+Each call runs exactly one arm. The code being tested usually has side effects, like uploading a file or writing a row, and running both versions would do that twice. If the new arm throws, fieldtest doesn't retry with `:default`; the exception reaches your code the same way it would without fieldtest.
 
-You decide where the config lives, how arms are picked and where the records end up. Each of those is a function you pass in. In-memory versions are included for tests and local work.
+You supply the functions that load the config, choose the arm and store the measurements. In-memory versions are included for tests and local development.
 
 ## Trying it in a REPL
 
@@ -21,36 +21,38 @@ You decide where the config lives, how arms are picked and where the records end
 (def srv
   (server/server
    {:config-source (memory/config-source
-                    {"greeting" {:revision 1 :weights {:b 50} :sticky :hashed}})
+                    {"asset-host" {:revision 1 :weights {:cdn 50} :sticky :hashed}})
     :recorder (memory/recorder store)}))
 
 ;; The client lists the arms it knows how to run.
-(def greeting {:experiment "greeting" :revision 1 :arms [:a :b]})
+(def asset-host {:experiment "asset-host" :revision 1 :arms [:default :cdn]})
 
 ;; Ask once per request (or page, or job) and reuse the answer.
 (def decisions
-  @(client/decide (client/in-process-decider srv) [greeting]
+  @(client/decide (client/in-process-decider srv) [asset-host]
                   {:sticky-key "user:42"}))
 
 (def c {:decisions decisions
         :reporter (client/in-process-reporter srv)})
 
 (def result
-  (client/timed c {:exposure-id (:exposure-id (client/decision c greeting))
-                   :metric "greeting.render"}
-                #(:result (client/branch c greeting
-                                         {:a (fn [who] (str "Hello, " who))
-                                          :b (fn [who] (str "Hi, " who))}
-                                         "Ada"))))
+  (client/timed c {:exposure-id (:exposure-id (client/decision c asset-host))
+                   :metric "asset-url"}
+                #(:result (client/branch c asset-host
+                                         {:default (fn [path] (str "https://app.example.com" path))
+                                          :cdn (fn [path] (str "https://cdn.example.com" path))}
+                                         "/logo.png"))))
 
 result
-;; => "Hello, Ada" or "Hi, Ada"
+;; => "https://app.example.com/logo.png" or "https://cdn.example.com/logo.png"
 
 (memory/exposures @store)
 (memory/feedback @store)
 ```
 
-Whichever greeting `user:42` gets, they keep getting it. The store ends up with one exposure, saying which arm `user:42` was given, and one timing that points back to it by exposure id.
+`user:42` gets the same URL every time, because the sticky key is hashed. Half of all keys land on `:cdn`, since that's its weight.
+
+The store now holds two records. When the server makes a decision it records it as an *exposure*, which says that `user:42` was given `:default` or `:cdn` and has a random id. The timing the client reported is *feedback*, and it refers to the exposure by that id. Joining the two gets you timings per arm.
 
 In ClojureScript and nbb, use the promises directly instead of `@`.
 
@@ -71,26 +73,24 @@ On the JVM it depends on promesa and cheshire. ClojureScript and nbb only need p
 
 ## How it fits together
 
-An experiment has a name and a revision. Bumping the revision reshuffles who gets which arm, so don't compare numbers across revisions.
+An experiment has a name and a revision number. Changing the revision reshuffles which keys get which arm, so numbers from different revisions shouldn't be compared.
 
-The server takes three plug-ins: a config source that returns the weights, a selector that picks an arm, and a recorder that stores exposures and feedback. The default selector hashes the sticky key, so a given key keeps getting the same arm.
+The server is built from three functions: a config source that returns each experiment's weights, a selector that picks an arm for a request, and a recorder that stores exposures and feedback. The built-in selector hashes the sticky key, so a given key keeps getting the same arm until you change the weights or the revision.
 
-The sticky key can be any string. Use whatever you want assignments to stay consistent for, such as a user id or a job id.
+The sticky key can be any string. Use whatever the assignment should stay consistent for, such as a user id or a job id.
 
-Each decision is recorded as an exposure with a random id, and the client includes that id when it reports a timing. To see timings per arm, join feedback to exposures on the id.
-
-Your code keeps working when fieldtest has problems. Without a decision the client runs `:a` and reports nothing, a failing config source or selector also leads to `:a`, and a failing recorder or reporter just loses that record. [Concepts](doc/concepts.md) has the full table.
+Your code keeps working when fieldtest has problems. Without a decision, `branch` runs `:default` and reports nothing. A config source or selector that throws also leads to `:default`, and a recorder or reporter that fails only loses that record. [Concepts](doc/concepts.md) has the full table.
 
 ## Over HTTP
 
-`fieldtest.http` has a decide handler and a feedback handler that take `{:body …}` and return `{:status :headers :body}`, so you can mount them in whatever server you already run. On the client side there's an HTTP decider and reporter, built on `js/fetch` in ClojureScript and `java.net.http` on the JVM.
+`fieldtest.http` has a decide handler and a feedback handler that take `{:body …}` and return `{:status :headers :body}`, so you can mount them in whatever web server you already run. On the client side there's an HTTP decider and reporter, built on `js/fetch` in ClojureScript and `java.net.http` on the JVM.
 
 ```clojure
 (def decide-handler (http/decide-handler srv))     ; POST /decide
 (def feedback-handler (http/feedback-handler srv)) ; POST /feedback
 
 ;; in the browser, in nbb, or on another JVM
-(client/decide (http/decider "https://example.test/decide") [greeting]
+(client/decide (http/decider "https://example.test/decide") [asset-host]
                {:sticky-key "user:42" :timeout-ms 300})
 ```
 
@@ -106,7 +106,7 @@ OpenFeature evaluates feature flags but doesn't record exposures or collect timi
 
 ## Writing your own plug-ins
 
-To check that a plug-in behaves the way the server expects, run it through the test kit. It lives in `test-kit/` and can be added to your test dependencies:
+To check that your own config source, selector or recorder behaves the way the server expects, run it through the test kit. It lives in `test-kit/` and can be added to your test dependencies:
 
 ```clojure
 (let [{:keys [pass? failures]} @(test-kit/check-recorder my-recorder)]

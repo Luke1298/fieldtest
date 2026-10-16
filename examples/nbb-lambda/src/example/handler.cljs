@@ -11,10 +11,10 @@
    [fieldtest.http :as http]
    [promesa.core :as p]))
 
-(def sort-impl {:experiment "sort-impl" :revision 1 :arms [:a :b]})
+(def sort-impl {:experiment "sort-impl" :revision 1 :arms [:default :sort-by]})
 
-(defn- sort-a [items] (sort items))
-(defn- sort-b [items] (vec (sort-by identity items)))
+(defn- sort-current [items] (sort items))
+(defn- sort-with-sort-by [items] (vec (sort-by identity items)))
 
 (defn- decisions-for
   "Decisions handed off in the payload, else a promise of decisions from the
@@ -37,7 +37,7 @@
                :on-error #(js/console.warn "fieldtest:" (ex-message %))}
             {:keys [arm exposure-id]} (client/decision c sort-impl)
             sorted (client/timed c {:exposure-id exposure-id :metric "job.sort"}
-                                 #(:result (client/branch c sort-impl {:a sort-a :b sort-b} items)))
+                                 #(:result (client/branch c sort-impl {:default sort-current :sort-by sort-with-sort-by} items)))
             ;; Reporting is fire-and-forget. A real Lambda should keep the
             ;; event loop alive (or flush) before returning; here we wait a beat.
             _ (p/delay 100)]

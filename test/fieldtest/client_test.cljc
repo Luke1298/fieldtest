@@ -7,7 +7,7 @@
    [fieldtest.test-macros :refer [defasynctest]]
    [promesa.core :as p]))
 
-(def asset-host {:experiment "asset-host" :revision 3 :arms [:a :b]})
+(def asset-host {:experiment "asset-host" :revision 3 :arms [:default :b]})
 
 (defn- decision [arm]
   {"asset-host" {:experiment "asset-host" :revision 3 :arm arm :exposure-id "e1"}})
@@ -20,7 +20,7 @@
      :client {:decisions decisions
               :reporter (fn [batch] (swap! sent into batch) (p/resolved nil))}}))
 
-(def arms {:a (fn [x] [:a x]) :b (fn [x] [:b x])})
+(def arms {:default (fn [x] [:default x]) :b (fn [x] [:b x])})
 
 (defn- settle [pr]
   (-> pr (p/then (fn [v] {:ok v})) (p/catch (fn [e] {:err e}))))
@@ -34,28 +34,28 @@
 
 (deftest branch-runs-exactly-one-arm
   (let [calls (atom [])
-        arms {:a (fn [] (swap! calls conj :a)) :b (fn [] (swap! calls conj :b))}]
+        arms {:default (fn [] (swap! calls conj :default)) :b (fn [] (swap! calls conj :b))}]
     (client/branch {:decisions (decision :b)} asset-host arms)
     (is (= [:b] @calls))))
 
-(deftest missing-decisions-run-a-untracked
+(deftest missing-decisions-run-default-untracked
   (testing "no decisions at all"
-    (is (= {:result [:a 1] :exposure-id nil} (client/branch {:decisions {}} asset-host arms 1))))
+    (is (= {:result [:default 1] :exposure-id nil} (client/branch {:decisions {}} asset-host arms 1))))
   (testing "decision for another revision"
-    (is (= {:result [:a 1] :exposure-id nil}
+    (is (= {:result [:default 1] :exposure-id nil}
            (client/branch {:decisions (decision :b)} (assoc asset-host :revision 4) arms 1))))
   (testing "no client decisions key"
-    (is (= [:a 1] (:result (client/branch {} asset-host arms 1))))))
+    (is (= [:default 1] (:result (client/branch {} asset-host arms 1))))))
 
-(deftest undeclared-arms-run-a-and-report
+(deftest undeclared-arms-run-default-and-report
   (let [{:keys [client sent]} (recording-client (decision :c))]
-    (is (= {:result [:a 1] :exposure-id "e1"} (client/branch client asset-host arms 1)))
+    (is (= {:result [:default 1] :exposure-id "e1"} (client/branch client asset-host arms 1)))
     (is (= [{:exposure-ids ["e1"] :outcome :unsupported-arm :value-unit :count}]
            (map #(select-keys % [:exposure-ids :outcome :value-unit]) @sent)))))
 
-(deftest a-is-required
+(deftest default-is-required
   (let [ran (atom false)]
-    (is (thrown-with-msg? #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) #"must declare an :a arm"
+    (is (thrown-with-msg? #?(:clj clojure.lang.ExceptionInfo :cljs ExceptionInfo) #"must declare a :default arm"
                           (client/branch {:decisions (decision :b)} asset-host {:b (fn [] (reset! ran true))})))
     (is (false? @ran))))
 
@@ -65,14 +65,14 @@
         a-ran (atom 0)]
     (is (= boom (try
                   (client/branch {:decisions (decision :b)} asset-host
-                                 {:a (fn [] (swap! a-ran inc)) :b (fn [] (swap! b-ran inc) (throw boom))})
+                                 {:default (fn [] (swap! a-ran inc)) :b (fn [] (swap! b-ran inc) (throw boom))})
                   nil
                   (catch #?(:clj Exception :cljs :default) e e))))
-    (is (= [1 0] [@b-ran @a-ran]) "never retried on :a")))
+    (is (= [1 0] [@b-ran @a-ran]) "never retried on :default")))
 
 (defasynctest promise-results-pass-through
   (let [pr (p/delay 5 :done)
-        {:keys [result exposure-id]} (client/branch {:decisions (decision :b)} asset-host {:a (fn [] :a) :b (fn [] pr)})]
+        {:keys [result exposure-id]} (client/branch {:decisions (decision :b)} asset-host {:default (fn [] :default) :b (fn [] pr)})]
     (is (identical? pr result))
     (is (= "e1" exposure-id))
     (p/let [v result]
@@ -81,7 +81,7 @@
 (defasynctest rejected-arms-reach-the-caller
   (let [boom (ex-info "async failure" {})
         {:keys [result]} (client/branch {:decisions (decision :b)} asset-host
-                                        {:a (fn [] :a) :b (fn [] (p/rejected boom))})]
+                                        {:default (fn [] :default) :b (fn [] (p/rejected boom))})]
     (p/let [{:keys [err]} (settle result)]
       (is (= boom err)))))
 
@@ -196,7 +196,7 @@
 
 (deftest decisions-round-trip-through-json
   (let [decisions {"asset-host" {:experiment "asset-host" :revision 3 :arm :b :exposure-id "e1"}
-                   "team/upload" {:experiment "team/upload" :revision 1 :arm :a :exposure-id "e2"}}]
+                   "team/upload" {:experiment "team/upload" :revision 1 :arm :default :exposure-id "e2"}}]
     (is (= decisions (client/json->decisions (client/decisions->json decisions))))
     (is (= {} (client/json->decisions (client/decisions->json {}))))
     (testing "unknown fields are ignored"
@@ -204,4 +204,4 @@
         (is (= ["x"] (keys decisions)))
         (is (= {:result :b :exposure-id "e"}
                (client/branch {:decisions decisions} {:experiment "x" :revision 1}
-                              {:a (constantly :a) :b (constantly :b)})))))))
+                              {:default (constantly :default) :b (constantly :b)})))))))

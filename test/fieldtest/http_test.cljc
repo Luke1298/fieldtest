@@ -17,7 +17,7 @@
 
 (def decide-body
   {:v 1 :sticky-key "u1" :context {:runtime "test"}
-   :experiments [{:experiment "asset-host" :revision 3 :arms ["a" "b"]}]})
+   :experiments [{:experiment "asset-host" :revision 3 :arms ["default" "b"]}]})
 
 (def feedback-body
   {:v 1 :feedback [{:exposure-ids ["e1"] :metric "load" :value 12.5 :value-unit "ms" :outcome "ok"
@@ -113,10 +113,10 @@
   (let [{:keys [server store]} (setup)
         calls (atom [])
         opts {:post (loopback server calls) :headers {"authorization" "Bearer t"}}
-        exp {:experiment "asset-host" :revision 3 :arms [:a :b]}]
+        exp {:experiment "asset-host" :revision 3 :arms [:default :b]}]
     (p/let [decisions (client/decide (http/decider "http://fieldtest/decide" opts) [exp] {:sticky-key "u1"})
             c {:decisions decisions :reporter (http/reporter "http://fieldtest/feedback" opts)}
-            {:keys [result exposure-id]} (client/branch c exp {:a (constantly :a) :b (constantly :b)})
+            {:keys [result exposure-id]} (client/branch c exp {:default (constantly :default) :b (constantly :b)})
             _ ((:reporter c) [{:exposure-ids [exposure-id] :metric "load" :value 1 :value-unit :ms :outcome :ok
                                :attrs {} :recorded-at #inst "2026-10-16T12:00:00.000Z"}])]
       (is (= :b result))
@@ -150,7 +150,7 @@
                (p/let [{:keys [status body]} (handler {:body (.-body init)})]
                  #js {:status status :text (fn [] (p/resolved body))})))
        (-> (p/let [decisions (client/decide (http/decider "http://fieldtest/decide")
-                                            [{:experiment "asset-host" :revision 3 :arms [:a :b]}]
+                                            [{:experiment "asset-host" :revision 3 :arms [:default :b]}]
                                             {:sticky-key "u1"})]
              (is (= :b (get-in decisions ["asset-host" :arm])))
              (is (= {:url "http://fieldtest/decide" :method "POST" :headers {"content-type" "application/json"}}

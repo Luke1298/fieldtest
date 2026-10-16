@@ -27,9 +27,9 @@
     (is pass? (pr-str failures))))
 
 (deftest analysis-query-over-an-aa-run
-  (let [srv (server/server {:config-source (memory/config-source {"aa" {:revision 1 :weights {:b 50} :sticky :hashed}})
+  (let [srv (server/server {:config-source (memory/config-source {"aa" {:revision 1 :weights {:candidate 50} :sticky :hashed}})
                             :recorder (pg/recorder @ds)})
-        exp {:experiment "aa" :revision 1 :arms [:a :b]}]
+        exp {:experiment "aa" :revision 1 :arms [:default :candidate]}]
     (doseq [i (range 400)]
       (let [decisions @(client/decide (client/in-process-decider srv) [exp] {:sticky-key (str "k" i)})
             c {:decisions decisions :reporter (client/in-process-reporter srv)}
@@ -38,7 +38,7 @@
           @(server/feedback! srv [{:exposure-ids [id] :metric "op" :value (rand-int 100)
                                    :value-unit :ms :outcome (if (zero? (mod i 7)) :error :ok)}]))))
     (let [rows (pg/analysis @ds "aa" 1 "op")]
-      (is (= ["a" "b"] (map :arm rows)))
+      (is (= ["candidate" "default"] (map :arm rows)))
       (is (= 400 (reduce + (map :exposures rows))))
       (is (= 360 (reduce + (map :feedback rows))))
       (is (= 40 (reduce + (map :missing_feedback rows))))

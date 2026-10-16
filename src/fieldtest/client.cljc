@@ -4,7 +4,7 @@
   A client is a map:
 
       {:decisions {\"asset-host\" {:experiment \"asset-host\" :revision 3
-                                  :arm :b :exposure-id \"6f1c...\"}}
+                                  :arm :cdn :exposure-id \"6f1c...\"}}
        :reporter  (in-process-reporter server)   ; or fieldtest.http/reporter
        :on-error  (fn [e] ...)}                  ; optional
 
@@ -12,7 +12,7 @@
   `branch` in that scope. An experiment is described by the same data the
   decide request lists:
 
-      (def asset-host {:experiment \"asset-host\" :revision 3 :arms [:a :b]})"
+      (def asset-host {:experiment \"asset-host\" :revision 3 :arms [:default :cdn]})"
   (:require
    [fieldtest.json :as json]
    [fieldtest.records :as records]
@@ -45,7 +45,7 @@
   "Asks `decider` for decisions on `experiments` and returns a promise of a map
   of experiment name to decision. Never rejects: when the decider fails, or
   takes longer than `:timeout-ms` (default 1,000), the promise resolves to
-  `{}` and every branch runs `:a` untracked.
+  `{}` and every branch runs `:default` untracked.
 
   Options: `:sticky-key`, `:context`, `:timeout-ms` and `:on-error`."
   ([decider experiments] (decide decider experiments {}))
@@ -104,16 +104,16 @@
   and returns `{:result r :exposure-id id}`.
 
   The decided arm runs when the client has a decision for this experiment and
-  revision. Without one, `:a` runs and `:exposure-id` is nil. A decision for an
-  arm that `arms` doesn't declare runs `:a`, keeps the exposure id and reports
+  revision. Without one, `:default` runs and `:exposure-id` is nil. A decision for an
+  arm that `arms` doesn't declare runs `:default`, keeps the exposure id and reports
   `unsupported-arm` feedback.
 
   A promise result is returned as the same promise, and an error thrown or
   rejected by the arm reaches the caller unchanged. No other arm is ever tried.
-  Throws ex-info before running anything when `arms` has no `:a`."
+  Throws ex-info before running anything when `arms` has no `:default`."
   [client experiment arms & args]
-  (when-not (ifn? (get arms :a))
-    (throw (ex-info (str "A branch must declare an :a arm: " (:experiment experiment))
+  (when-not (ifn? (get arms :default))
+    (throw (ex-info (str "A branch must declare a :default arm: " (:experiment experiment))
                     {:type ::missing-baseline :experiment (:experiment experiment)})))
   (let [{:keys [arm exposure-id]} (decision client experiment)
         declared? (ifn? (get arms arm))]
@@ -123,7 +123,7 @@
                        :value 1
                        :value-unit :count
                        :outcome :unsupported-arm}))
-    {:result (apply (get arms (if declared? arm :a)) args)
+    {:result (apply (get arms (if declared? arm :default)) args)
      :exposure-id exposure-id}))
 
 ;; Timing

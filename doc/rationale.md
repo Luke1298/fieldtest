@@ -8,9 +8,9 @@ Weights live on the server so that changing them doesn't require a deploy. Keepi
 
 ## Each call runs one arm
 
-The operations this was written for have side effects, things like uploads and database writes. If fieldtest ran both versions so it could compare their results, every upload would happen twice. Retrying a failed `:b` on `:a` has the same problem. So `branch` calls exactly one arm, and if that arm throws, you get the exception back as it was thrown.
+The operations this was written for have side effects, things like uploads and database writes. If fieldtest ran both versions so it could compare their results, every upload would happen twice. Retrying a failed candidate on `:default` has the same problem. So `branch` calls exactly one arm, and if that arm throws, you get the exception back as it was thrown.
 
-You can still fall back by hand: catch the error inside your `:b` arm, call the old code, and report the outcome as `fallback` so the analysis counts it.
+You can still fall back by hand: catch the error inside your candidate arm, call the old code, and report the outcome as `fallback` so the analysis counts it.
 
 GitHub's Scientist and the libraries based on it run both versions on every call. That works for pure code, but not for the kind of operations fieldtest is meant for.
 
@@ -18,7 +18,7 @@ GitHub's Scientist and the libraries based on it run both versions on every call
 
 When the server makes a decision it writes an exposure record holding the arm, the revision, the sticky key and the client's context, under a random id. The client gets the id back with the decision. When it later reports a timing, the feedback carries that id along with the measurement, and to see timings per arm you join feedback to exposures on it.
 
-This way only the server records the arm. If clients reported it themselves, a client bug could file a `:b` timing under `:a` and the numbers would look fine. It also makes exposures that never receive feedback easy to find, and those are often the first sign that an arm is failing (see [analysis](analysis.md)).
+This way only the server records the arm. If clients reported it themselves, a client bug could file a `:cdn` timing under `:default` and the numbers would look fine. It also makes exposures that never receive feedback easy to find, and those are often the first sign that an arm is failing (see [analysis](analysis.md)).
 
 Exposure ids are 128 random bits and don't encode the sticky key or the arm, so they're safe to log.
 
@@ -34,7 +34,7 @@ The cost is that a function signature says nothing about how the function should
 
 ## When tracking fails
 
-If the config source throws, the server keeps using the last configs it read, and if the selector throws, that experiment gets `:a`. A recorder that throws loses the record but the response still goes out. On the client, a decider that errors or runs past its timeout leaves `branch` without a decision, so it runs `:a` and reports nothing. The table in [concepts](concepts.md) lists every case.
+If the config source throws, the server keeps using the last configs it read, and if the selector throws, that experiment gets `:default`. A recorder that throws loses the record but the response still goes out. On the client, a decider that errors or runs past its timeout leaves `branch` without a decision, so it runs `:default` and reports nothing. The table in [concepts](concepts.md) lists every case.
 
 ## Infrastructure
 

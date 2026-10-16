@@ -1,6 +1,6 @@
 # Browser client example
 
-A shadow-cljs page that asks the [ring-server](../ring-server) example for a decision on `image-format`, then uses `branch` to load either a PNG (`:a`) or an SVG (`:b`) and `timed` to report how long the fetch took.
+A shadow-cljs page that asks the [ring-server](../ring-server) example for a decision on `image-format`, then uses `branch` to load either a PNG (`:default`) or an SVG (`:svg`) and `timed` to report how long the fetch took.
 
 Start the server first, then the page:
 

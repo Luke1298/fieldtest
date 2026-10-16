@@ -8,7 +8,7 @@
 
 (defn- choose [config sticky-key & [arms]]
   (selector/weighted-hash {:experiment "x" :config config :sticky-key sticky-key
-                           :supported-arms (or arms (conj (set (keys (:weights config))) :a))
+                           :supported-arms (or arms (conj (set (keys (:weights config))) :default))
                            :context {}}))
 
 (deftest slices-are-fixed-per-candidate
@@ -26,8 +26,8 @@
 (deftest arm-for-bucket
   (is (= :b (selector/arm-for-bucket {:b 20} 0)))
   (is (= :b (selector/arm-for-bucket {:b 20} 1999)))
-  (is (= :a (selector/arm-for-bucket {:b 20} 2000)))
-  (is (= :a (selector/arm-for-bucket {} 0)))
+  (is (= :default (selector/arm-for-bucket {:b 20} 2000)))
+  (is (= :default (selector/arm-for-bucket {} 0)))
   (is (= :c (selector/arm-for-bucket {:b 10 :c 10} 5000))))
 
 (deftest hashed-mode-is-sticky
@@ -46,11 +46,11 @@
         arms (frequencies (repeatedly 2000 #(choose config "same-key")))]
     (is (< 800 (:b arms 0) 1200))))
 
-(deftest unsupported-arms-get-a
+(deftest unsupported-arms-get-default
   (let [config {:revision 1 :weights {:b 100} :sticky :hashed}]
-    (is (= :b (choose config "k" #{:a :b})))
-    (is (= :a (choose config "k" #{:a})))
-    (is (= :a (choose config "k" [])))))
+    (is (= :b (choose config "k" #{:default :b})))
+    (is (= :default (choose config "k" #{:default})))
+    (is (= :default (choose config "k" [])))))
 
 (deftest revision-reshuffles
   (let [arms (fn [rev] (mapv #(choose {:revision rev :weights {:b 50} :sticky :hashed} (str "user:" %)) (range 400)))

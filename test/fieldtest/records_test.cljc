@@ -14,7 +14,7 @@
             :sticky-key "k" :context {:runtime "jvm"} :created-at t}
            e)))
   (testing "defaults"
-    (let [e (records/exposure {:exposure-id "e1" :experiment "x" :revision 2 :arm :a})]
+    (let [e (records/exposure {:exposure-id "e1" :experiment "x" :revision 2 :arm :default})]
       (is (= {} (:context e)))
       (is (inst? (:created-at e)))
       (is (nil? (:sticky-key e))))))

@@ -24,11 +24,11 @@ Prefer percentiles to means. Changes often show up in the tail, and a mean hides
 
 ## Group by the assigned arm
 
-Group by the arm on the exposure. That is the arm the server assigned, and it can differ from what the client actually ran. Suppose a client couldn't run `:b`. It ran `:a` instead and reported `unsupported-arm`, but that unit still belongs to `:b`. If you drop those units, `:b` looks better than it is because only the clients that could run it are left. Count `unsupported-arm` separately. If there's a lot of it, some clients are probably out of date.
+Group by the arm on the exposure. That is the arm the server assigned, and it can differ from what the client actually ran. Suppose an old client doesn't have the `:cdn` arm. It runs `:default` instead and reports `unsupported-arm`, but that unit still belongs to `:cdn`. If you drop those units, `:cdn` looks better than it is, because only the clients that could run it are left. Count `unsupported-arm` separately. If there's a lot of it, some clients are probably out of date.
 
 ## Sample-ratio mismatch
 
-With `:b` at 20%, roughly 20% of exposures should be `:b`. Check the actual split against the configured weights; a chi-squared test is enough. A mismatch means something upstream is wrong, for example a cache serving stale decisions or clients crashing before they ask, and the experiment's results can't be trusted.
+With `:cdn` at 20%, roughly 20% of exposures should be `:cdn`. Check the actual split against the configured weights; a chi-squared test is enough. A mismatch means something upstream is wrong, for example a cache serving stale decisions or clients crashing before they ask, and the experiment's results can't be trusted.
 
 ## Missing feedback
 
@@ -40,4 +40,4 @@ Exposures carry the client's context map. If clients put a release or build id i
 
 ## Run an A/A first
 
-Before trusting any experiment, run it with the same code in `:a` and `:b`. You should see no sample-ratio mismatch and matching latency and failure rates. Any difference you see is noise, and it gives you a rough idea of how small an effect you'll be able to detect. fieldtest's own test suite runs an A/A over 20,000 simulated keys for this reason.
+Before trusting any experiment, run an A/A test: give the candidate arm the same code as `:default`. You should see no sample-ratio mismatch and matching latency and failure rates. Any difference you see is noise, and it gives you a rough idea of how small an effect you'll be able to detect. fieldtest's own test suite runs an A/A over 20,000 simulated keys for this reason.

@@ -1,5 +1,5 @@
 (ns fieldtest.conformance-test
-  "A/A conformance: identical code in :a and :b, run from a client through a
+  "A/A conformance: identical code in :default and :b, run from a client through a
   server for many simulated sticky keys, in-process and over the HTTP
   handlers. The arm split must match the weights and every exposure must join
   to its feedback."
@@ -12,7 +12,7 @@
    [fieldtest.test-macros :refer [defasynctest]]
    [promesa.core :as p]))
 
-(def experiment {:experiment "aa" :revision 1 :arms [:a :b]})
+(def experiment {:experiment "aa" :revision 1 :arms [:default :b]})
 
 (defn- operation
   "The operation under test. Both arms run exactly this."
@@ -49,7 +49,7 @@
                   (for [i (range n)]
                     (p/let [decisions (client/decide decider [experiment] {:sticky-key (str "user:" i) :timeout-ms 30000})
                             c {:decisions decisions :reporter tracked-reporter}
-                            {:keys [exposure-id]} (client/branch c experiment {:a (constantly :a) :b (constantly :b)})
+                            {:keys [exposure-id]} (client/branch c experiment {:default (constantly :default) :b (constantly :b)})
                             arm (get-in decisions ["aa" :arm])
                             v (client/timed c {:exposure-id exposure-id :metric "aa.op"} operation i)]
                       (when-not (= (* 2 i) v)
@@ -75,8 +75,8 @@
 
 (defn- check-zero [mode]
   (p/let [{:keys [arms store]} (run-aa mode 0 2000)]
-    (is (= #{:a} (set arms)) (str mode ": 0% gives no :b"))
-    (is (joins? store) (str mode ": :a exposures join to their feedback too"))))
+    (is (= #{:default} (set arms)) (str mode ": 0% gives no :b"))
+    (is (joins? store) (str mode ": :default exposures join to their feedback too"))))
 
 (defasynctest aa-in-process
   (p/do (check-split :in-process)

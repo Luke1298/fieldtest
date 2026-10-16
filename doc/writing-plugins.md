@@ -4,7 +4,7 @@ A server takes three plug-ins and, optionally, an error hook:
 
 ```clojure
 (server/server {:config-source my-config-source
-                :selector      my-selector        ; defaults to the weighted-hash selector
+                :selector      my-selector        ; defaults to the built-in weighted-hash selector
                 :recorder      my-recorder
                 :error-hook    (fn [{:keys [plugin error experiment]}] ...)})
 ```
@@ -14,7 +14,7 @@ Each one is an ordinary function. It can return a plain value or a promise, and 
 ## Config source
 
 ```clojure
-(fn [] {"asset-host" {:revision 3 :weights {:b 20} :sticky :hashed}})
+(fn [] {"asset-host" {:revision 3 :weights {:cdn 20} :sticky :hashed}})
 ```
 
 Returns the current configs, keyed by experiment name. String keys and string arm names, as you'd get from parsing JSON, are fine.
@@ -26,12 +26,12 @@ If reading configs is slow or goes over the network, wrap the source in `fieldte
 ## Selector
 
 ```clojure
-(fn [{:keys [experiment config sticky-key supported-arms context]}] :b)
+(fn [{:keys [experiment config sticky-key supported-arms context]}] :cdn)
 ```
 
 Picks an arm for one experiment. `config` has already been normalized, and if the request had no sticky key, its `:sticky` is set to `:none`. `context` is whatever map the client put in its decide request.
 
-A selector shouldn't throw or hang on valid input. It should return `:a` or a candidate that is both in the config and in `supported-arms`; the server replaces anything else with `:a` and reports it. In `hashed` mode, the same sticky key, experiment, revision and weights should always give the same arm.
+A selector shouldn't throw or hang on valid input. It should return `:default` or a candidate that is both in the config and in `supported-arms`; the server replaces anything else with `:default` and reports it. In `hashed` mode, the same sticky key, experiment, revision and weights should always give the same arm.
 
 If the weights really live in a flag service, write a selector that asks it. `examples/openfeature-selector` does this for OpenFeature.
 

@@ -8,7 +8,7 @@
 
 (def server "http://localhost:8723")
 
-(def image-format {:experiment "image-format" :revision 1 :arms [:a :b]})
+(def image-format {:experiment "image-format" :revision 1 :arms [:default :svg]})
 
 (defn- sticky-key
   "A random id kept in localStorage, so this browser keeps its arm."
@@ -43,7 +43,7 @@
           url (client/timed c {:exposure-id exposure-id :metric "image.fetch" :timeout-ms 5000
                                :attrs {:page "example"}}
                             #(:result (client/branch c image-format
-                                                     {:a (fn [] (fetch-image "/asset.png"))
-                                                      :b (fn [] (fetch-image "/asset.svg"))})))]
-    (status! (str "Arm " (or arm ":a (no decision)") " loaded " url
+                                                     {:default (fn [] (fetch-image "/asset.png"))
+                                                      :svg (fn [] (fetch-image "/asset.svg"))})))]
+    (status! (str "Arm " (or arm ":default (no decision)") " loaded " url
                   (when exposure-id (str ", exposure " exposure-id))))))

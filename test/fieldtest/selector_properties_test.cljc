@@ -13,7 +13,7 @@
 (defn- arm-of [weights sticky-key]
   (selector/weighted-hash {:experiment "prop" :config {:revision 1 :weights weights :sticky :hashed}
                            :sticky-key sticky-key
-                           :supported-arms (conj (set (keys weights)) :a)}))
+                           :supported-arms (conj (set (keys weights)) :default)}))
 
 (defspec raising-a-weight-never-moves-a-key-out-of-a-candidate 200
   (prop/for-all [weights gen-weights
@@ -24,8 +24,8 @@
                       raised (update weights arm + delta)
                       before (arm-of weights sticky-key)
                       after (arm-of raised sticky-key)]
-                  (if (= :a before)
-                    (contains? #{:a arm} after)
+                  (if (= :default before)
+                    (contains? #{:default arm} after)
                     (= before after)))))
 
 (defn- expected-share [weights arm]
@@ -38,7 +38,7 @@
                       config {:revision 1 :weights weights :sticky :none}
                       counts (frequencies (repeatedly n #(selector/weighted-hash
                                                           {:experiment "prop" :config config
-                                                           :supported-arms (conj (set (keys weights)) :a)})))]
+                                                           :supported-arms (conj (set (keys weights)) :default)})))]
                   (every? (fn [arm]
                             (< (abs (- (/ (get counts arm 0) n) (expected-share weights arm))) 0.015))
                           (keys weights)))))

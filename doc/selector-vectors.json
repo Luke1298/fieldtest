@@ -1,5 +1,5 @@
 {
-  "description": "Hashed-mode test vectors for the fieldtest weighted-hash selector. bucket = fnv1a32(utf8(experiment + '|' + revision + '|' + sticky-key)) mod 10000. Candidates sort by name; candidate i of n owns [floor(i*10000/n), floor((i+1)*10000/n)) and draws its first min(floor(weight*100), width) buckets. A bucket outside every drawn range, or in an unsupported arm, gives 'a'.",
+  "description": "Hashed-mode test vectors for the fieldtest weighted-hash selector. bucket = fnv1a32(utf8(experiment + '|' + revision + '|' + sticky-key)) mod 10000. Candidates sort by name; candidate i of n owns [floor(i*10000/n), floor((i+1)*10000/n)) and draws its first min(floor(weight*100), width) buckets. A bucket outside every drawn range, or in an unsupported arm, gives 'default'.",
   "vectors": [
     {
       "note": "first bucket",
@@ -10,8 +10,8 @@
         "b": 20
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 0,
       "arm": "b"
@@ -25,8 +25,8 @@
         "b": 20
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 1999,
       "arm": "b"
@@ -40,11 +40,11 @@
         "b": 20
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 2000,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "last bucket",
@@ -55,11 +55,11 @@
         "b": 20
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 9999,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "weight 0 draws nothing",
@@ -70,11 +70,11 @@
         "b": 0
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 0,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "100% draws the last bucket",
@@ -85,8 +85,8 @@
         "b": 100
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 9999,
       "arm": "b"
@@ -100,8 +100,8 @@
         "b": 12.5
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 1249,
       "arm": "b"
@@ -115,11 +115,11 @@
         "b": 12.5
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 1250,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "two candidates: b last drawn",
@@ -131,9 +131,9 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 2999,
       "arm": "b"
@@ -148,12 +148,12 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 3000,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "two candidates: end of b slice",
@@ -165,12 +165,12 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 4999,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "two candidates: c first bucket",
@@ -182,9 +182,9 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 5000,
       "arm": "c"
@@ -199,9 +199,9 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 7999,
       "arm": "c"
@@ -216,12 +216,12 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 8000,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "clamping: b clamped, last bucket of slice",
@@ -233,9 +233,9 @@
         "c": 10
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 4999,
       "arm": "b"
@@ -250,9 +250,9 @@
         "c": 10
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 5000,
       "arm": "c"
@@ -267,9 +267,9 @@
         "c": 10
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 5999,
       "arm": "c"
@@ -284,12 +284,12 @@
         "c": 10
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 6000,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "three candidates clamped: b last bucket",
@@ -302,10 +302,10 @@
         "d": 33.34
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 3332,
       "arm": "b"
@@ -321,10 +321,10 @@
         "d": 33.34
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 3333,
       "arm": "c"
@@ -340,10 +340,10 @@
         "d": 33.34
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 6665,
       "arm": "c"
@@ -359,10 +359,10 @@
         "d": 33.34
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 6666,
       "arm": "d"
@@ -378,10 +378,10 @@
         "d": 33.34
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 9999,
       "arm": "d"
@@ -397,10 +397,10 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 999,
       "arm": "b"
@@ -416,13 +416,13 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 1000,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "three candidates 10% each: c first",
@@ -435,10 +435,10 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 3333,
       "arm": "c"
@@ -454,10 +454,10 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 4332,
       "arm": "c"
@@ -473,13 +473,13 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 4333,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "three candidates 10% each: d first",
@@ -492,10 +492,10 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 6666,
       "arm": "d"
@@ -511,10 +511,10 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 7665,
       "arm": "d"
@@ -530,13 +530,13 @@
         "d": 10
       },
       "supported-arms": [
-        "a",
         "b",
         "c",
-        "d"
+        "d",
+        "default"
       ],
       "bucket": 7666,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "candidates sort by name",
@@ -548,8 +548,8 @@
         "alpha": 10
       },
       "supported-arms": [
-        "a",
         "alpha",
+        "default",
         "zeta"
       ],
       "bucket": 100,
@@ -565,15 +565,15 @@
         "alpha": 10
       },
       "supported-arms": [
-        "a",
         "alpha",
+        "default",
         "zeta"
       ],
       "bucket": 5100,
       "arm": "zeta"
     },
     {
-      "note": "unsupported candidate gives a",
+      "note": "unsupported candidate gives default",
       "experiment": "asset-host",
       "revision": 3,
       "sticky-key": "u4787",
@@ -581,13 +581,13 @@
         "b": 20
       },
       "supported-arms": [
-        "a"
+        "default"
       ],
       "bucket": 10,
-      "arm": "a"
+      "arm": "default"
     },
     {
-      "note": "unsupported other candidate gives a, not b",
+      "note": "unsupported other candidate gives default, not b",
       "experiment": "upload-path",
       "revision": 1,
       "sticky-key": "u7420",
@@ -596,11 +596,11 @@
         "c": 30
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 5001,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "same key, revision 3",
@@ -611,8 +611,8 @@
         "b": 20
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 10,
       "arm": "b"
@@ -626,11 +626,11 @@
         "b": 20
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 5867,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "non-ASCII sticky key",
@@ -641,8 +641,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 3322,
       "arm": "b"
@@ -656,8 +656,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 4519,
       "arm": "b"
@@ -671,8 +671,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 1136,
       "arm": "b"
@@ -686,8 +686,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 3008,
       "arm": "b"
@@ -701,8 +701,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 4419,
       "arm": "b"
@@ -716,11 +716,11 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 8093,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "non-ASCII experiment name",
@@ -731,8 +731,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 4506,
       "arm": "b"
@@ -744,10 +744,10 @@
       "sticky-key": "anyone",
       "weights": {},
       "supported-arms": [
-        "a"
+        "default"
       ],
       "bucket": 5885,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "empty sticky key string is hashed",
@@ -758,8 +758,8 @@
         "b": 50
       },
       "supported-arms": [
-        "a",
-        "b"
+        "b",
+        "default"
       ],
       "bucket": 2383,
       "arm": "b"
@@ -774,9 +774,9 @@
         "c": 25
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 5574,
       "arm": "c"
@@ -791,9 +791,9 @@
         "c": 25
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 3193,
       "arm": "b"
@@ -808,9 +808,9 @@
         "c": 25
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 336,
       "arm": "b"
@@ -825,12 +825,12 @@
         "c": 25
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 7955,
-      "arm": "a"
+      "arm": "default"
     },
     {
       "note": "plain key",
@@ -842,9 +842,9 @@
         "c": 25
       },
       "supported-arms": [
-        "a",
         "b",
-        "c"
+        "c",
+        "default"
       ],
       "bucket": 6050,
       "arm": "c"

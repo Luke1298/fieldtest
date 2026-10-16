@@ -8,7 +8,7 @@
   - `:config-source` `(fn [] configs)` returns the current experiment configs
     (see `fieldtest.config`).
   - `:selector` `(fn [{:keys [experiment config sticky-key supported-arms context]}] arm)`
-    chooses an arm for one experiment. Defaults to
+    chooses an arm for one experiment. Defaults to the built-in
     `fieldtest.selector/weighted-hash`.
   - `:recorder` `(fn [kind record])` receives every record, where `kind` is
     `:exposure` or `:feedback` (see `fieldtest.records`).
@@ -16,7 +16,7 @@
     plug-in failure. Optional.
 
   A failing plug-in never makes a decide request fail: a bad config source
-  leaves the last good configs in place, a failing selector gives `:a`, and a
+  leaves the last good configs in place, a failing selector gives `:default`, and a
   failing recorder is ignored. Every failure goes to the error hook."
   (:require
    [clojure.string :as str]
@@ -131,12 +131,12 @@
 ;; Deciding
 
 (defn- valid-arm
-  "`arm` if the server may decide it, else nil. The server only decides `:a`
+  "`arm` if the server may decide it, else nil. The server only decides `:default`
   or a configured candidate the client supports."
   [arm config supported-arms]
   (let [arm (->kw arm)]
     (cond
-      (= :a arm) :a
+      (= :default arm) :default
       (and (contains? supported-arms arm) (contains? (:weights config) arm)) arm)))
 
 (defn- choose-arm
@@ -144,7 +144,7 @@
   [server configs {:keys [sticky-key context]} {:keys [experiment revision arms]}]
   (let [cfg (get configs experiment)]
     (if (or (nil? cfg) (not= revision (:revision cfg)))
-      (p/resolved :a)
+      (p/resolved :default)
       (let [cfg (cond-> cfg (nil? sticky-key) (assoc :sticky :none))]
         (-> (attempt (::selector server) {:experiment experiment
                                           :config cfg
@@ -157,10 +157,10 @@
                                                      :experiment experiment
                                                      :error (ex-info "Selector chose an arm that is not a supported, configured candidate"
                                                                      {:type ::invalid-arm :arm arm})})
-                              :a))))
+                              :default))))
             (p/catch (fn [e]
                        (report-error! server {:plugin :selector :experiment experiment :error e})
-                       :a)))))))
+                       :default)))))))
 
 (defn- decide-one [server configs request e]
   (p/let [arm (choose-arm server configs request e)
@@ -180,8 +180,8 @@
   `{:decisions [{:experiment :revision :arm :exposure-id} ...]}`.
 
   `request` is `{:sticky-key \"...\" :context {...} :experiments [{:experiment
-  \"name\" :revision 3 :arms [:a :b]} ...]}`; the sticky key and context are
-  optional. Every decision, including `:a`, is recorded as an exposure before
+  \"name\" :revision 3 :arms [:default :cdn]} ...]}`; the sticky key and context are
+  optional. Every decision, including `:default`, is recorded as an exposure before
   the promise resolves.
 
   Rejects with an ex-info of type `:fieldtest.server/invalid-request` when the

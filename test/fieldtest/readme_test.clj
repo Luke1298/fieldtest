@@ -17,7 +17,7 @@
     (let [result @(ns-resolve ns-name 'result)
           store @(ns-resolve ns-name 'store)
           exposures ((ns-resolve ns-name 'memory/exposures) @store)]
-      (is (contains? #{"Hello, Ada" "Hi, Ada"} result))
+      (is (contains? #{"https://app.example.com/logo.png" "https://cdn.example.com/logo.png"} result))
       (is (= 1 (count exposures)))
       ;; Feedback is fire-and-forget; give it a moment to land.
       (loop [tries 50]

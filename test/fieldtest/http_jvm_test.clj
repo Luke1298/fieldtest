@@ -32,11 +32,11 @@
                       (.createContext "/feedback" (mount (http/feedback-handler srv)))
                       (.start))
         base (str "http://127.0.0.1:" (.getPort (.getAddress http-server)))
-        exp {:experiment "asset-host" :revision 3 :arms [:a :b]}]
+        exp {:experiment "asset-host" :revision 3 :arms [:default :b]}]
     (try
       (let [decisions @(client/decide (http/decider (str base "/decide")) [exp] {:sticky-key "u1" :timeout-ms 5000})
             c {:decisions decisions :reporter (http/reporter (str base "/feedback"))}
-            {:keys [result exposure-id]} (client/branch c exp {:a (constantly :a) :b (constantly :b)})]
+            {:keys [result exposure-id]} (client/branch c exp {:default (constantly :default) :b (constantly :b)})]
         (is (= :b result))
         @((:reporter c) [{:exposure-ids [exposure-id] :metric "load" :value 7 :value-unit :ms :outcome :ok
                           :attrs {} :recorded-at (java.util.Date.)}])

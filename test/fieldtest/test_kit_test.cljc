@@ -47,14 +47,14 @@
 
 (defasynctest broken-selectors-fail
   (p/let [throws (kit/check-selector (fn [_] (throw (ex-info "boom" {}))))
-          rejects (kit/check-selector (fn [{:keys [sticky-key]}] (if (= "user:1" sticky-key) (p/rejected (ex-info "boom" {})) :a)))
+          rejects (kit/check-selector (fn [{:keys [sticky-key]}] (if (= "user:1" sticky-key) (p/rejected (ex-info "boom" {})) :default)))
           unconfigured (kit/check-selector (fn [_] :z))
           nil-arm (kit/check-selector (fn [_] nil))
-          ignores-support (kit/check-selector (fn [{:keys [config]}] (or (first (sort (keys (:weights config)))) :a)))
+          ignores-support (kit/check-selector (fn [{:keys [config]}] (or (first (sort (keys (:weights config)))) :default)))
           unstable (kit/check-selector (fn [{:keys [config]}]
                                          (if (and (seq (:weights config)) (zero? (rand-int 2)))
                                            (first (keys (:weights config)))
-                                           :a)))
+                                           :default)))
           hangs (kit/check-selector (fn [_] (p/deferred)) {:timeout-ms 5 :repeats 1})]
     (is (= #{:throws} (reasons throws)))
     (is (= #{:throws} (reasons rejects)))

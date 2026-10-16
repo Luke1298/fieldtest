@@ -14,7 +14,9 @@
   test:nbb {:doc "Run the test suite under nbb"
             :task (shell "npx nbb -m fieldtest.nbb-test-runner")}
   test:nbb-consumer {:doc "A downstream nbb project using fieldtest via :local/root"
-                     :task (shell {:dir "test-consumers/nbb"} "npx --prefix ../.. nbb -m consumer.main")}
+                     ;; nbb caches :local/root deps by nbb.edn's hash, so clear it to test current src.
+                     :task (do (fs/delete-tree "test-consumers/nbb/.nbb")
+                               (shell {:dir "test-consumers/nbb"} "npx --prefix ../.. nbb -m consumer.main"))}
   test {:doc "Run every runtime's test suite"
         :task (do (run 'test:jvm) (run 'test:node) (run 'test:nbb) (run 'test:nbb-consumer))}
 

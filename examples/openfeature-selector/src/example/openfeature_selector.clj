@@ -5,7 +5,7 @@
 
   fieldtest still owns the experiment: the server only asks this selector
   about experiments in its config, and an arm the flag returns is used only if
-  it is a configured candidate the client supports. Anything else is :a."
+  it is a configured candidate the client supports. Anything else is :default."
   (:import
    (dev.openfeature.sdk Client MutableContext)))
 
@@ -36,8 +36,8 @@
   ([client] (selector client {}))
   ([^Client client {:keys [flag-key] :or {flag-key identity}}]
    (fn [{:keys [experiment config supported-arms] :as request}]
-     (let [variant (.getStringValue client ^String (flag-key experiment) "a" (evaluation-context request))
+     (let [variant (.getStringValue client ^String (flag-key experiment) "default" (evaluation-context request))
            arm (keyword variant)]
        (if (and (contains? (:weights config) arm) (contains? (set supported-arms) arm))
          arm
-         :a)))))
+         :default)))))
