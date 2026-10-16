@@ -1,0 +1,5 @@
+;; Read by the EDN-file config source. Edit it while the server runs; changes
+;; are picked up within the cache TTL.
+{"asset-host" {:revision 1 :weights {:b 50} :sticky :hashed}
+ "image-format" {:revision 1 :weights {:b 50} :sticky :hashed}
+ "sort-impl" {:revision 1 :weights {:b 50} :sticky :hashed}}

@@ -1,0 +1,14 @@
+.cpcache
+.shadow-cljs
+node_modules
+target
+.nrepl-port
+.clj-kondo/.cache
+.lsp
+out
+.nbb
+
+# Local planning and agent tooling
+outline-spec/
+.claude/
+.agents/

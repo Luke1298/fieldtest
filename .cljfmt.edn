@@ -1,0 +1,2 @@
+{:extra-indents {defasynctest [[:block 1]]}
+ :sort-ns-references? true}

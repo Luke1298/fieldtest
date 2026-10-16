@@ -1,0 +1,3 @@
+{:paths ["src"]
+ :deps {io.github.Luke1298/fieldtest {:local/root "../.."}
+        http-kit/http-kit {:mvn/version "2.8.1"}}}

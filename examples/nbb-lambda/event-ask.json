@@ -1,0 +1,8 @@
+{
+  "jobId": "job-456",
+  "items": [9, 4, 7, 1],
+  "fieldtest": {
+    "decideUrl": "http://localhost:8723/decide",
+    "feedbackUrl": "http://localhost:8723/feedback"
+  }
+}

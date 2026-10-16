@@ -1,0 +1,8 @@
+{
+  "name": "fieldtest-nbb-lambda-example",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "nbb": "1.3.204"
+  }
+}

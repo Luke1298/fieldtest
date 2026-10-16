@@ -1,0 +1,8 @@
+{:lint-as {fieldtest.test-macros/defasynctest clojure.test/deftest
+           clojure.test.check.clojure-test/defspec clojure.core/def
+           promesa.core/let clojure.core/let
+           promesa.core/plet clojure.core/let
+           promesa.core/doseq clojure.core/doseq
+           promesa.core/loop clojure.core/let
+           promesa.core/with-redefs clojure.core/with-redefs}
+ :output {:exclude-files ["^target/" "^node_modules/" "^\\.shadow-cljs/"]}}

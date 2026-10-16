@@ -1,0 +1,11 @@
+{
+  "name": "fieldtest-browser-client-example",
+  "private": true,
+  "scripts": {
+    "watch": "shadow-cljs watch app",
+    "build": "shadow-cljs release app"
+  },
+  "devDependencies": {
+    "shadow-cljs": "2.28.20"
+  }
+}

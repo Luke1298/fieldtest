@@ -1,0 +1,13 @@
+{:cljdoc.doc/tree
+ [["Readme" {:file "README.md"}]
+  ["Rationale" {:file "doc/rationale.md"}]
+  ["Concepts" {:file "doc/concepts.md"}]
+  ["Writing plug-ins" {:file "doc/writing-plugins.md"}]
+  ["Analysis" {:file "doc/analysis.md"}]
+  ["Decisions" {}
+   ["1. FNV-1a hash" {:file "doc/decisions/0001-fnv1a-hash.md"}]
+   ["2. Fixed slices" {:file "doc/decisions/0002-fixed-slices.md"}]
+   ["3. Functions over protocols" {:file "doc/decisions/0003-functions-over-protocols.md"}]
+   ["4. promesa" {:file "doc/decisions/0004-promesa.md"}]
+   ["5. JVM JSON" {:file "doc/decisions/0005-jvm-json.md"}]]
+  ["Changelog" {:file "CHANGELOG.md"}]]}

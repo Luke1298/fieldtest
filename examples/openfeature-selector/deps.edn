@@ -1,0 +1,8 @@
+{:paths ["src"]
+ :deps {io.github.Luke1298/fieldtest {:local/root "../.."}
+        dev.openfeature/sdk {:mvn/version "1.19.2"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {io.github.Luke1298/fieldtest-test-kit {:local/root "../../test-kit"}
+                      io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+         :main-opts ["-m" "cognitect.test-runner"]}}}

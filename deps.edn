@@ -1,0 +1,17 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+        funcool/promesa {:mvn/version "11.0.678"}
+        cheshire/cheshire {:mvn/version "5.13.0"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+                      org.clojure/test.check {:mvn/version "1.1.1"}}
+         :main-opts ["-m" "cognitect.test-runner"]
+         :exec-fn cognitect.test-runner.api/test}
+  :test-kit {:extra-paths ["test-kit"]}
+  :kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2025.06.05"}}
+          :main-opts ["-m" "clj-kondo.main"]}
+  :cljfmt {:replace-deps {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
+           :main-opts ["-m" "cljfmt.main"]}
+  :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.9"}}
+          :ns-default build}}}
