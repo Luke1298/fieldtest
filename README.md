@@ -58,13 +58,14 @@ In ClojureScript and nbb, use the promises directly instead of `@`.
 
 ## Installing
 
-fieldtest isn't on Clojars yet, so depend on a local checkout or on git:
+fieldtest is on [Clojars](https://clojars.org/io.github.luke1298/fieldtest):
 
 ```clojure
 ;; deps.edn
-{:deps {io.github.Luke1298/fieldtest {:local/root "../fieldtest"}}}
-;; or
-{:deps {io.github.Luke1298/fieldtest {:git/url "https://github.com/Luke1298/fieldtest" :git/sha "…"}}}
+{:deps {io.github.luke1298/fieldtest {:mvn/version "0.1.0"}}}
+
+;; Leiningen
+[io.github.luke1298/fieldtest "0.1.0"]
 ```
 
 nbb takes the same coordinates in `nbb.edn`, and shadow-cljs picks it up from `deps.edn`.

@@ -1,2 +1,2 @@
 {:paths ["src"]
- :deps {io.github.Luke1298/fieldtest {:local/root "../.."}}}
+ :deps {io.github.luke1298/fieldtest {:local/root "../.."}}}

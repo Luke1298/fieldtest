@@ -1,9 +1,9 @@
 {:paths ["src" "resources"]
- :deps {io.github.Luke1298/fieldtest {:local/root "../.."}
+ :deps {io.github.luke1298/fieldtest {:local/root "../.."}
         com.github.seancorfield/next.jdbc {:mvn/version "1.3.955"}
         org.postgresql/postgresql {:mvn/version "42.7.12"}}
  :aliases
  {:test {:extra-paths ["test"]
-         :extra-deps {io.github.Luke1298/fieldtest-test-kit {:local/root "../../test-kit"}
+         :extra-deps {io.github.luke1298/fieldtest-test-kit {:local/root "../../test-kit"}
                       io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
          :main-opts ["-m" "cognitect.test-runner"]}}}
