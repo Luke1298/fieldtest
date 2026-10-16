@@ -1,4 +1,0 @@
-;; The test kit as its own library, so projects can depend on it from tests
-;; without fieldtest's development paths.
-{:paths ["."]
- :deps {io.github.luke1298/fieldtest {:local/root ".."}}}

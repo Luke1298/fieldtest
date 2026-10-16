@@ -1,5 +1,5 @@
 (ns fieldtest.nbb-test-runner
-  "Finds every `*_test.clj[cs]` namespace under test/ and test-kit/, runs them
+  "Finds every `*_test.clj[cs]` namespace under test/, runs them
   with cljs.test and exits non-zero on any failure or error."
   (:require
    ["fs" :as fs]
@@ -28,7 +28,7 @@
       symbol))
 
 (defn -main [& _]
-  (let [nss (->> ["test" "test-kit"]
+  (let [nss (->> ["test"]
                  (mapcat (fn [root] (map #(file->ns root %) (test-files root))))
                  (remove skipped)
                  sort)]

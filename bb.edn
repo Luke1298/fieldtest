@@ -8,7 +8,7 @@
                sort))
 
   test:jvm {:doc "Run the JVM test suite"
-            :task (clojure "-M:test:test-kit" "-d" "test" "-d" "test-kit")}
+            :task (clojure "-M:test" "-d" "test")}
   test:node {:doc "Compile and run the shadow-cljs node test build"
              :task (shell "npm test")}
   test:nbb {:doc "Run the test suite under nbb"
@@ -21,11 +21,11 @@
         :task (do (run 'test:jvm) (run 'test:node) (run 'test:nbb) (run 'test:nbb-consumer))}
 
   lint:kondo {:doc "clj-kondo over sources and tests"
-              :task (apply clojure "-M:kondo" "--lint" "src" "test" "test-kit" "script" example-dirs)}
+              :task (apply clojure "-M:kondo" "--lint" "src" "test" "script" example-dirs)}
   lint:fmt {:doc "cljfmt check"
-            :task (apply clojure "-M:cljfmt" "check" "src" "test" "test-kit" "script" "build.clj" "bb.edn" "deps.edn" example-dirs)}
+            :task (apply clojure "-M:cljfmt" "check" "src" "test" "script" "build.clj" "bb.edn" "deps.edn" example-dirs)}
   fmt {:doc "cljfmt fix"
-       :task (apply clojure "-M:cljfmt" "fix" "src" "test" "test-kit" "script" "build.clj" "bb.edn" "deps.edn" example-dirs)}
+       :task (apply clojure "-M:cljfmt" "fix" "src" "test" "script" "build.clj" "bb.edn" "deps.edn" example-dirs)}
   lint:no-infra {:doc "Fail on environment, cloud or database access under src/, and on cheshire outside #?(:clj ...)"
                  :task (lint/no-infra! "src")}
   lint {:doc "All linters"

@@ -1,4 +1,4 @@
-{:source-paths ["src" "test" "test-kit"]
+{:source-paths ["src" "test"]
  :dependencies [[funcool/promesa "11.0.678"]
                 [org.clojure/test.check "1.1.1"]]
  :builds

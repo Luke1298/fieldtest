@@ -49,7 +49,7 @@ It has to accept every record shape and cope with being called concurrently. If 
 
 ## The test kit
 
-The test kit is a separate library in `test-kit/`. Add it to a test alias, either as `io.github.luke1298/fieldtest-test-kit {:local/root "…/fieldtest/test-kit"}` or with `:git/url` and `:deps/root "test-kit"`, and call its checks from whatever test runner you use. Each check returns a promise of `{:pass? :failures}`, and every failure has a `:reason` keyword and a `:message`.
+The test kit is the `fieldtest.test-kit` namespace, and it comes in the same jar as the rest of fieldtest, so there's nothing extra to add to your dependencies. Call its checks from whatever test runner you use. Each check returns a promise of `{:pass? :failures}`, and every failure has a `:reason` keyword and a `:message`.
 
 ```clojure
 (ns my.recorder-test

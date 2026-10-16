@@ -62,10 +62,10 @@ fieldtest is on [Clojars](https://clojars.org/io.github.luke1298/fieldtest):
 
 ```clojure
 ;; deps.edn
-{:deps {io.github.luke1298/fieldtest {:mvn/version "0.1.0"}}}
+{:deps {io.github.luke1298/fieldtest {:mvn/version "0.1.1"}}}
 
 ;; Leiningen
-[io.github.luke1298/fieldtest "0.1.0"]
+[io.github.luke1298/fieldtest "0.1.1"]
 ```
 
 nbb takes the same coordinates in `nbb.edn`, and shadow-cljs picks it up from `deps.edn`.
@@ -107,7 +107,7 @@ OpenFeature evaluates feature flags but doesn't record exposures or collect timi
 
 ## Writing your own plug-ins
 
-To check that your own config source, selector or recorder behaves the way the server expects, run it through the test kit. It lives in `test-kit/` and can be added to your test dependencies:
+To check that your own config source, selector or recorder behaves the way the server expects, run it through `fieldtest.test-kit`, which comes with the library:
 
 ```clojure
 (let [{:keys [pass? failures]} @(test-kit/check-recorder my-recorder)]

@@ -8,7 +8,6 @@
                       org.clojure/test.check {:mvn/version "1.1.1"}}
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
-  :test-kit {:extra-paths ["test-kit"]}
   :kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2025.06.05"}}
           :main-opts ["-m" "clj-kondo.main"]}
   :cljfmt {:replace-deps {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
